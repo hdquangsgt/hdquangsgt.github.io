@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="412" viewBox="0 0 720 412" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="412"/>
+  <text x="20" y="24" text-anchor="start" class="t h">A session is a tree; compaction changes what is sent, not what is stored</text>
+  <rect class="box" x="20" y="60" width="52" height="34" rx="6"/>
+  <text x="46.0" y="82.0" text-anchor="middle" class="t h mono">e1</text>
+  <rect class="box" x="96" y="60" width="52" height="34" rx="6"/>
+  <text x="122.0" y="82.0" text-anchor="middle" class="t h mono">e2</text>
+  <rect class="box" x="172" y="60" width="52" height="34" rx="6"/>
+  <text x="198.0" y="82.0" text-anchor="middle" class="t h mono">e3</text>
+  <rect class="box" x="248" y="60" width="52" height="34" rx="6"/>
+  <text x="274.0" y="82.0" text-anchor="middle" class="t h mono">e4</text>
+  <rect class="core" x="324" y="60" width="52" height="34" rx="6"/>
+  <text x="350.0" y="82.0" text-anchor="middle" class="t h mono">e5</text>
+  <rect class="core" x="400" y="60" width="52" height="34" rx="6"/>
+  <text x="426.0" y="82.0" text-anchor="middle" class="t h mono">e6</text>
+  <rect class="core" x="476" y="60" width="52" height="34" rx="6"/>
+  <text x="502.0" y="82.0" text-anchor="middle" class="t h mono">e7</text>
+  <rect class="core" x="552" y="60" width="52" height="34" rx="6"/>
+  <text x="578.0" y="82.0" text-anchor="middle" class="t h mono">e8</text>
+  <path class="line" d="M74 77 H94" marker-end="url(#a)"/>
+  <path class="line" d="M150 77 H170" marker-end="url(#a)"/>
+  <path class="line" d="M226 77 H246" marker-end="url(#a)"/>
+  <path class="line" d="M302 77 H322" marker-end="url(#a)"/>
+  <path class="line" d="M378 77 H398" marker-end="url(#a)"/>
+  <path class="line" d="M454 77 H474" marker-end="url(#a)"/>
+  <path class="line" d="M530 77 H550" marker-end="url(#a)"/>
+  <rect class="ext" x="632" y="60" width="68" height="34" rx="6"/>
+  <text x="666.0" y="82.0" text-anchor="middle" class="t h mono">compact</text>
+  <path class="line" d="M606 77 H630" marker-end="url(#a)"/>
+  <path class="dash" d="M198 96 V138 H246" marker-end="url(#a)"/>
+  <rect class="none" x="248" y="122" width="52" height="34" rx="6"/>
+  <text x="274.0" y="144.0" text-anchor="middle" class="t h mono">b4</text>
+  <path class="dash" d="M302 139 H322" marker-end="url(#a)"/>
+  <rect class="none" x="324" y="122" width="52" height="34" rx="6"/>
+  <text x="350.0" y="144.0" text-anchor="middle" class="t h mono">b5</text>
+  <text x="390" y="134" text-anchor="start" class="m s">branch left via /tree or /fork:</text>
+  <text x="390" y="150" text-anchor="start" class="m s">kept on disk, not sent to the model</text>
+  <path class="line" d="M20 190 V200 H300 V190"/>
+  <text x="160.0" y="220" text-anchor="middle" class="t h">older span: summarized</text>
+  <text x="160.0" y="238" text-anchor="middle" class="m s">raw entries stay in the tree</text>
+  <path class="line" d="M324 190 V200 H604 V190"/>
+  <text x="464.0" y="220" text-anchor="middle" class="t h">recent span: kept verbatim</text>
+  <text x="464.0" y="238" text-anchor="middle" class="m s">keepRecentTokens, default 20,000</text>
+  <path class="line" d="M200 260 V292" marker-end="url(#a)"/>
+  <path class="line" d="M470 260 V292" marker-end="url(#a)"/>
+  <text x="20" y="280" text-anchor="start" class="t h">Next request</text>
+  <rect class="ext" x="100" y="296" width="200" height="50" rx="6"/>
+  <text x="200.0" y="325.0" text-anchor="middle" class="t h">Summary</text>
+  <text x="200.0" y="343.0" text-anchor="middle" class="m s">Goal · Progress · Decisions · Next</text>
+  <rect class="core" x="320" y="296" width="240" height="50" rx="6"/>
+  <text x="440.0" y="325.0" text-anchor="middle" class="t h">e5 … e8 + new messages</text>
+  <text x="440.0" y="343.0" text-anchor="middle" class="m s">verbatim</text>
+  <text x="20" y="376" text-anchor="start" class="m s">Summarizer input drops thinking blocks and cuts each tool result to 2,000 characters, so a summary can lose detail.</text>
+  <text x="20" y="394" text-anchor="start" class="m s">The compact entry stores the summary and firstKeptEntryId (here e5): where verbatim history resumes.</text>
+</svg>

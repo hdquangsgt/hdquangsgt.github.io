@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="372" viewBox="0 0 720 372" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="372"/>
+  <text x="20" y="24" text-anchor="start" class="t h">What goes into one model request</text>
+  <rect class="core" x="20" y="40" width="300" height="50" rx="6"/>
+  <text x="34" y="61" text-anchor="start" class="t h">System prompt</text>
+  <text x="34" y="79" text-anchor="start" class="m s">Pi base instructions + context files</text>
+  <path class="line" d="M322 65 H358" marker-end="url(#a)"/>
+  <rect class="core" x="20" y="100" width="300" height="50" rx="6"/>
+  <text x="34" y="121" text-anchor="start" class="t h">Tool definitions</text>
+  <text x="34" y="139" text-anchor="start" class="m s">sent with every request</text>
+  <path class="line" d="M322 125 H358" marker-end="url(#a)"/>
+  <rect class="box" x="20" y="160" width="300" height="50" rx="6"/>
+  <text x="34" y="181" text-anchor="start" class="t h">Skill list</text>
+  <text x="34" y="199" text-anchor="start" class="m s">name, description, path; body loads on demand</text>
+  <path class="line" d="M322 185 H358" marker-end="url(#a)"/>
+  <rect class="core" x="20" y="220" width="300" height="50" rx="6"/>
+  <text x="34" y="241" text-anchor="start" class="t h">History</text>
+  <text x="34" y="259" text-anchor="start" class="m s">active branch (a summary replaces old turns)</text>
+  <path class="line" d="M322 245 H358" marker-end="url(#a)"/>
+  <rect class="core" x="20" y="280" width="300" height="50" rx="6"/>
+  <text x="34" y="301" text-anchor="start" class="t h">This message</text>
+  <text x="34" y="319" text-anchor="start" class="m s">@files, images, !cmd output, expanded templates</text>
+  <path class="line" d="M322 305 H358" marker-end="url(#a)"/>
+  <rect class="ext" x="360" y="40" width="190" height="290" rx="6"/>
+  <text x="455" y="66" text-anchor="middle" class="t h">Extensions</text>
+  <text x="455" y="84" text-anchor="middle" class="m s">may transform</text>
+  <text x="455" y="124" text-anchor="middle" class="m mono">before_agent_start</text>
+  <text x="455" y="158" text-anchor="middle" class="m mono">context</text>
+  <text x="455" y="192" text-anchor="middle" class="m mono">before_provider_request</text>
+  <text x="455" y="252" text-anchor="middle" class="m s">TypeScript, in the Pi process</text>
+  <path class="line" d="M552 185 H568" marker-end="url(#a)"/>
+  <rect class="os" x="570" y="140" width="130" height="90" rx="6"/>
+  <text x="635.0" y="180.0" text-anchor="middle" class="t h">Provider</text>
+  <text x="635.0" y="198.0" text-anchor="middle" class="m s">request</text>
+  <text x="635.0" y="216.0" text-anchor="middle" class="m s">(streamed back)</text>
+  <text x="20" y="354" text-anchor="start" class="m s">Grey box: only descriptions are always present. A skill's full SKILL.md is read when the model decides it matches.</text>
+</svg>

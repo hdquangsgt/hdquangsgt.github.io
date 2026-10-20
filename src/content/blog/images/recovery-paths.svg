@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="516" viewBox="0 0 720 516" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="516"/>
+  <text x="16" y="24" text-anchor="start" class="m s h">TRIGGER</text>
+  <text x="236" y="24" text-anchor="start" class="m s h">BUILT-IN RESPONSE</text>
+  <text x="516" y="24" text-anchor="start" class="m s h">WHEN THAT RUNS OUT</text>
+  <rect class="box" x="16" y="40" width="190" height="78" rx="6"/>
+  <text x="111.0" y="83.0" text-anchor="middle" class="t h">Transient provider failure</text>
+  <text x="111.0" y="101.0" text-anchor="middle" class="m s">documented as “transient”</text>
+  <rect class="core" x="236" y="40" width="250" height="78" rx="6"/>
+  <text x="361.0" y="74.0" text-anchor="middle" class="t h">Agent-level retry</text>
+  <text x="361.0" y="92.0" text-anchor="middle" class="m s">on by default, 3 attempts</text>
+  <text x="361.0" y="110.0" text-anchor="middle" class="m s">backoff from 2 s, capped at 60 s</text>
+  <rect class="box" x="516" y="40" width="188" height="78" rx="6"/>
+  <text x="610.0" y="83.0" text-anchor="middle" class="t h">Attempts used up:</text>
+  <text x="610.0" y="101.0" text-anchor="middle" class="m s">the failure is yours to handle</text>
+  <path class="line" d="M208 79 H234" marker-end="url(#a)"/>
+  <path class="line" d="M488 79 H514" marker-end="url(#a)"/>
+  <rect class="box" x="16" y="130" width="190" height="78" rx="6"/>
+  <text x="111.0" y="173.0" text-anchor="middle" class="t h">Context overflow, or an</text>
+  <text x="111.0" y="191.0" text-anchor="middle" class="m s">early length stop</text>
+  <rect class="core" x="236" y="130" width="250" height="78" rx="6"/>
+  <text x="361.0" y="173.0" text-anchor="middle" class="t h">Recovery compaction,</text>
+  <text x="361.0" y="191.0" text-anchor="middle" class="m s">then one retry as a fresh run</text>
+  <rect class="box" x="516" y="130" width="188" height="78" rx="6"/>
+  <text x="610.0" y="173.0" text-anchor="middle" class="t h">Compaction fails or is</text>
+  <text x="610.0" y="191.0" text-anchor="middle" class="m s">cancelled: no internal retry</text>
+  <path class="line" d="M208 169 H234" marker-end="url(#a)"/>
+  <path class="line" d="M488 169 H514" marker-end="url(#a)"/>
+  <rect class="box" x="16" y="220" width="190" height="78" rx="6"/>
+  <text x="111.0" y="263.0" text-anchor="middle" class="t h">Free context below the</text>
+  <text x="111.0" y="281.0" text-anchor="middle" class="m s">reserve (16,384 tokens)</text>
+  <rect class="core" x="236" y="220" width="250" height="78" rx="6"/>
+  <text x="361.0" y="254.0" text-anchor="middle" class="t h">Auto-compaction</text>
+  <text x="361.0" y="272.0" text-anchor="middle" class="m s">checked between turns and</text>
+  <text x="361.0" y="290.0" text-anchor="middle" class="m s">before a new prompt</text>
+  <rect class="box" x="516" y="220" width="188" height="78" rx="6"/>
+  <text x="610.0" y="263.0" text-anchor="middle" class="t h">The summary is lossy:</text>
+  <text x="610.0" y="281.0" text-anchor="middle" class="m s">detail leaves the model's view</text>
+  <path class="line" d="M208 259 H234" marker-end="url(#a)"/>
+  <path class="line" d="M488 259 H514" marker-end="url(#a)"/>
+  <rect class="box" x="16" y="310" width="190" height="78" rx="6"/>
+  <text x="111.0" y="353.0" text-anchor="middle" class="t h">A tool call fails</text>
+  <text x="111.0" y="371.0" text-anchor="middle" class="m s">or a tool_call handler throws</text>
+  <rect class="core" x="236" y="310" width="250" height="78" rx="6"/>
+  <text x="361.0" y="353.0" text-anchor="middle" class="t h">Error result to the model</text>
+  <text x="361.0" y="371.0" text-anchor="middle" class="m s">a handler failure blocks the call</text>
+  <rect class="box" x="516" y="310" width="188" height="78" rx="6"/>
+  <text x="610.0" y="353.0" text-anchor="middle" class="t h">Up to the model whether</text>
+  <text x="610.0" y="371.0" text-anchor="middle" class="m s">it changes approach</text>
+  <path class="line" d="M208 349 H234" marker-end="url(#a)"/>
+  <path class="line" d="M488 349 H514" marker-end="url(#a)"/>
+  <rect class="none" x="16" y="400" width="190" height="78" rx="6"/>
+  <text x="111.0" y="443.0" text-anchor="middle" class="t h">Repeated tool misuse,</text>
+  <text x="111.0" y="461.0" text-anchor="middle" class="m s">or a run stuck in a bad state</text>
+  <rect class="none" x="236" y="400" width="250" height="78" rx="6"/>
+  <text x="361.0" y="443.0" text-anchor="middle" class="m h">Nothing described</text>
+  <text x="361.0" y="461.0" text-anchor="middle" class="m s">in the docs I read</text>
+  <rect class="os" x="516" y="400" width="188" height="78" rx="6"/>
+  <text x="610.0" y="443.0" text-anchor="middle" class="t h">You</text>
+  <text x="610.0" y="461.0" text-anchor="middle" class="m s">inspect, adjust, resume</text>
+  <path class="line" d="M208 439 H234" marker-end="url(#a)"/>
+  <path class="line" d="M488 439 H514" marker-end="url(#a)"/>
+  <text x="20" y="500" text-anchor="start" class="m s">Dashed: absent from the pages I read, not proof that Pi has nothing here. Solid green: documented behavior.</text>
+</svg>

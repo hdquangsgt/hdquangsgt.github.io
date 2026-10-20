@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="430" viewBox="0 0 720 430" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="430"/>
+  <text x="20" y="24" text-anchor="start" class="t h">One run of the agent loop</text>
+  <rect class="core" x="20" y="40" width="152" height="60" rx="6"/>
+  <text x="96.0" y="74.0" text-anchor="middle" class="t h">Message arrives</text>
+  <text x="96.0" y="92.0" text-anchor="middle" class="m s">added to active branch</text>
+  <rect class="core" x="196" y="40" width="152" height="60" rx="6"/>
+  <text x="272.0" y="74.0" text-anchor="middle" class="t h">Build request</text>
+  <text x="272.0" y="92.0" text-anchor="middle" class="m s">prompt + branch + tools</text>
+  <rect class="core" x="372" y="40" width="152" height="60" rx="6"/>
+  <text x="448.0" y="74.0" text-anchor="middle" class="t h">Model streams reply</text>
+  <text x="448.0" y="92.0" text-anchor="middle" class="m s">text + tool calls</text>
+  <rect class="core" x="548" y="40" width="152" height="60" rx="6"/>
+  <text x="624.0" y="74.0" text-anchor="middle" class="t h">Run tool calls</text>
+  <text x="624.0" y="92.0" text-anchor="middle" class="m s">results recorded</text>
+  <path class="line" d="M174 70 H194" marker-end="url(#a)"/>
+  <path class="line" d="M350 70 H370" marker-end="url(#a)"/>
+  <path class="line" d="M526 70 H546" marker-end="url(#a)"/>
+  <rect class="box" x="548" y="140" width="152" height="60" rx="6"/>
+  <text x="624.0" y="174.0" text-anchor="middle" class="t h">Another request?</text>
+  <text x="624.0" y="192.0" text-anchor="middle" class="m s">tool results or queue</text>
+  <path class="line" d="M624 102 V138" marker-end="url(#a)"/>
+  <path class="line" d="M546 170 H272 V102" marker-end="url(#a)"/>
+  <text x="410" y="162" text-anchor="middle" class="m s">yes: start a new turn</text>
+  <path class="line" d="M624 202 V238" marker-end="url(#a)"/>
+  <text x="632" y="224" text-anchor="start" class="m s">no</text>
+  <rect class="box" x="548" y="240" width="152" height="50" rx="6"/>
+  <text x="624.0" y="269.0" text-anchor="middle" class="t h mono">agent_end</text>
+  <text x="624.0" y="287.0" text-anchor="middle" class="m s">one run finished</text>
+  <rect class="core" x="372" y="240" width="152" height="50" rx="6"/>
+  <text x="448.0" y="269.0" text-anchor="middle" class="t h mono">agent_settled</text>
+  <text x="448.0" y="287.0" text-anchor="middle" class="m s">no automatic continuation</text>
+  <path class="line" d="M546 265 H526" marker-end="url(#a)"/>
+  <text x="20" y="262" text-anchor="start" class="m s">Retries, overflow recovery, compaction and queued messages</text>
+  <text x="20" y="278" text-anchor="start" class="m s">can still start another run after agent_end, so wait for</text>
+  <text x="20" y="294" text-anchor="start" class="m s">agent_settled, not agent_end, before treating work as done.</text>
+  <text x="20" y="336" text-anchor="start" class="t h">While it runs: three ways to reach in</text>
+  <rect class="ext" x="20" y="348" width="213" height="60" rx="6"/>
+  <text x="126.5" y="382.0" text-anchor="middle" class="t h">Steering  ·  Enter</text>
+  <text x="126.5" y="400.0" text-anchor="middle" class="m s">lands after the current turn</text>
+  <rect class="ext" x="253" y="348" width="213" height="60" rx="6"/>
+  <text x="359.5" y="382.0" text-anchor="middle" class="t h">Follow-up  ·  Alt+Enter</text>
+  <text x="359.5" y="400.0" text-anchor="middle" class="m s">lands once pending work is done</text>
+  <rect class="ext" x="486" y="348" width="213" height="60" rx="6"/>
+  <text x="592.5" y="382.0" text-anchor="middle" class="t h">Abort  ·  Esc</text>
+  <text x="592.5" y="400.0" text-anchor="middle" class="m s">stops; queue returns to editor</text>
+</svg>

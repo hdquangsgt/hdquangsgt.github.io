@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="470" viewBox="0 0 780 470" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .lane { stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.3; fill: none; stroke-dasharray: 5 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .lane { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="780" height="470"/>
+  <text x="20" y="24" class="t h">Lifecycle of one tool call</text>
+  <rect class="box" x="20" y="38" width="140" height="38" rx="6"/>
+  <text x="90" y="55" text-anchor="middle" class="t h">Model</text>
+  <text x="90" y="70" text-anchor="middle" class="m s">provider API</text>
+  <line class="lane" x1="90" y1="76" x2="90" y2="418"/>
+  <rect class="core" x="200" y="38" width="140" height="38" rx="6"/>
+  <text x="270" y="55" text-anchor="middle" class="t h">Agent loop</text>
+  <text x="270" y="70" text-anchor="middle" class="m s">pi-agent-core</text>
+  <line class="lane" x1="270" y1="76" x2="270" y2="418"/>
+  <rect class="ext" x="380" y="38" width="140" height="38" rx="6"/>
+  <text x="450" y="55" text-anchor="middle" class="t h">Extensions</text>
+  <text x="450" y="70" text-anchor="middle" class="m s">tool_call / tool_result</text>
+  <line class="lane" x1="450" y1="76" x2="450" y2="418"/>
+  <rect class="core" x="570" y="38" width="140" height="38" rx="6"/>
+  <text x="640" y="55" text-anchor="middle" class="t h">Tool</text>
+  <text x="640" y="70" text-anchor="middle" class="m s">execute()</text>
+  <line class="lane" x1="640" y1="76" x2="640" y2="418"/>
+  <line class="line" x1="270" y1="108" x2="90" y2="108" marker-end="url(#a)"/>
+  <text x="180.0" y="102" text-anchor="middle" class="t s">1  request: system prompt + branch + tool definitions</text>
+  <line class="dash" x1="90" y1="140" x2="270" y2="140" marker-end="url(#a)"/>
+  <text x="180.0" y="134" text-anchor="middle" class="t s">2  reply: text + tool call {name, args}</text>
+  <path class="line" d="M270,162 h34 v16 h-34" marker-end="url(#a)"/>
+  <text x="312" y="174" class="t s">3  find the tool, validate args against its schema</text>
+  <line class="line" x1="270" y1="206" x2="450" y2="206" marker-end="url(#a)"/>
+  <text x="360.0" y="200" text-anchor="middle" class="t s">4  tool_call: handlers may mutate input or block</text>
+  <line class="dash" x1="450" y1="236" x2="270" y2="236" marker-end="url(#a)"/>
+  <text x="360.0" y="230" text-anchor="middle" class="t s">5  allow, or block with a reason (becomes an error result)</text>
+  <line class="line" x1="270" y1="268" x2="640" y2="268" marker-end="url(#a)"/>
+  <text x="455.0" y="262" text-anchor="middle" class="t s">6  execute(params, signal, onUpdate)</text>
+  <line class="dash" x1="640" y1="298" x2="270" y2="298" marker-end="url(#a)"/>
+  <text x="455.0" y="292" text-anchor="middle" class="t s">7  result: content + details (throw = error result)</text>
+  <line class="line" x1="270" y1="328" x2="450" y2="328" marker-end="url(#a)"/>
+  <text x="360.0" y="322" text-anchor="middle" class="t s">8  tool_result: handlers may redact, annotate, replace</text>
+  <line class="line" x1="270" y1="364" x2="90" y2="364" marker-end="url(#a)"/>
+  <text x="180.0" y="358" text-anchor="middle" class="t s">9  next request carries the tool-result message</text>
+  <rect class="box" x="20" y="392" width="740" height="52" rx="6"/>
+  <text x="32" y="411" class="t s"><tspan class="h">Several calls in one reply:</tspan> validated and hooked in order, then run concurrently by default;</text>
+  <text x="32" y="428" class="t s">results are recorded in the order the model asked. A sequential tool forces the whole batch to run one at a time.</text>
+  <text x="20" y="460" class="m s">Unknown tool name: the loop returns an error result ("Tool … not found") and the model sees it like any other result.</text>
+</svg>

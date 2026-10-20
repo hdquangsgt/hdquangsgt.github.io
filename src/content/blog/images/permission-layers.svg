@@ -67,10 +67,10 @@
 
   <!-- Row 3: Claude Code default -->
   <text x="20" y="292" class="t h">Claude Code,</text>
-  <text x="20" y="310" class="t h">default mode</text>
+  <text x="20" y="310" class="t h">Manual mode</text>
   <rect class="gate" x="168" y="268" width="160" height="56" rx="6"/>
   <text x="248" y="292" text-anchor="middle" class="t">rules + mode</text>
-  <text x="248" y="310" text-anchor="middle" class="m">prompts outside cwd</text>
+  <text x="248" y="310" text-anchor="middle" class="m">asks: edits, shell, web</text>
   <rect class="none" x="352" y="268" width="160" height="56" rx="6"/>
   <text x="432" y="292" text-anchor="middle" class="m">optional</text>
   <text x="432" y="310" text-anchor="middle" class="m">(sandbox setting)</text>

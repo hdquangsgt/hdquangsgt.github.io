@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="400" viewBox="0 0 780 400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .lane { stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.3; fill: none; stroke-dasharray: 5 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .lane { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="780" height="400"/>
+  <text x="20" y="24" class="t h">Three ways a tool can reach the model, and what each costs in context</text>
+  <rect class="core" x="20" y="44" width="236" height="252" rx="8"/>
+  <text x="34" y="68" class="t h">Declared upfront</text>
+  <text x="34" y="94" class="t s">Definition (name, description,</text>
+  <text x="34" y="112" class="t s">schema) is in every request.</text>
+  <text x="34" y="130" class="t s"></text>
+  <text x="34" y="148" class="t s">Pi: exposure direct (default),</text>
+  <text x="34" y="166" class="t s">built-ins, defaultTools.</text>
+  <text x="34" y="184" class="t s">Claude Code: built-in tools; MCP</text>
+  <text x="34" y="202" class="t s">tools with alwaysLoad.</text>
+  <text x="34" y="256" class="m s h">Cost: context on every turn,</text>
+  <text x="34" y="272" class="m s h">whether or not the tool is used.</text>
+  <rect class="ext" x="274" y="44" width="236" height="252" rx="8"/>
+  <text x="288" y="68" class="t h">Found on demand</text>
+  <text x="288" y="94" class="t s">Only names / server notes up front;</text>
+  <text x="288" y="112" class="t s">a search step loads definitions.</text>
+  <text x="288" y="130" class="t s"></text>
+  <text x="288" y="148" class="t s">Pi: exposure deferred +</text>
+  <text x="288" y="166" class="t s">the tool_search tool (off by default).</text>
+  <text x="288" y="184" class="t s">Claude Code: ToolSearch for MCP</text>
+  <text x="288" y="202" class="t s">tools (on by default).</text>
+  <text x="288" y="256" class="m s h">Cost: one extra step, and the</text>
+  <text x="288" y="272" class="m s h">model must search for what it needs.</text>
+  <rect class="os" x="528" y="44" width="236" height="252" rx="8"/>
+  <text x="542" y="68" class="t h">Reached through a script</text>
+  <text x="542" y="94" class="t s">Model writes code; the script calls</text>
+  <text x="542" y="112" class="t s">tools; only its output returns.</text>
+  <text x="542" y="130" class="t s"></text>
+  <text x="542" y="148" class="t s">Pi: codemode tool (off by default);</text>
+  <text x="542" y="166" class="t s">MCP tools default to this exposure.</text>
+  <text x="542" y="184" class="t s"></text>
+  <text x="542" y="202" class="t s">(Documented for Pi only here.)</text>
+  <text x="542" y="256" class="m s h">Cost: a script is a place where</text>
+  <text x="542" y="272" class="m s h">intermediate calls are hidden.</text>
+  <line class="line" x1="20" y1="318" x2="760" y2="318"/>
+  <text x="20" y="342" class="t s"><tspan class="h">Reading the figure:</tspan> the same tool can sit in different columns depending on configuration, so “how many tools” and</text>
+  <text x="20" y="360" class="t s">“how many tools does the model see each turn” are different questions. Pi’s docs give codemode’s tool listing a default budget of</text>
+  <text x="20" y="378" class="t s">3,000 estimated tokens; Claude Code’s docs say each upfront tool “consumes context that would otherwise be available”.</text>
+</svg>

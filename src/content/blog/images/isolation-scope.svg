@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="440"/>
+  <text x="20" y="24" text-anchor="start" class="t h">Whole-process isolation</text>
+  <text x="20" y="42" text-anchor="start" class="m s">Docker, Docker Sandboxes, OpenShell</text>
+  <rect class="gdash" x="20" y="56" width="320" height="210" rx="6"/>
+  <text x="34" y="76" text-anchor="start" class="m s">container / sandbox boundary</text>
+  <rect class="ext" x="36" y="88" width="288" height="74" rx="6"/>
+  <text x="180.0" y="120.0" text-anchor="middle" class="t h">Pi process</text>
+  <text x="180.0" y="138.0" text-anchor="middle" class="m s">agent loop, extensions,</text>
+  <text x="180.0" y="156.0" text-anchor="middle" class="m s">and every extension tool</text>
+  <rect class="core" x="36" y="176" width="288" height="74" rx="6"/>
+  <text x="180.0" y="217.0" text-anchor="middle" class="t h">Built-in tools and ! commands</text>
+  <text x="180.0" y="235.0" text-anchor="middle" class="m s">read, write, edit, bash, grep, find, ls</text>
+  <rect class="os" x="20" y="290" width="320" height="60" rx="6"/>
+  <text x="180.0" y="324.0" text-anchor="middle" class="t h">Host</text>
+  <text x="180.0" y="342.0" text-anchor="middle" class="m s">only what you mount or pass in crosses over</text>
+  <path class="line" d="M180 268 V288" marker-end="url(#a)"/>
+  <text x="360" y="24" text-anchor="start" class="t h">Tool-only isolation</text>
+  <text x="360" y="42" text-anchor="start" class="m s">Gondolin extension</text>
+  <rect class="os" x="380" y="56" width="320" height="130" rx="6"/>
+  <text x="394" y="76" text-anchor="start" class="m s">host</text>
+  <rect class="ext" x="396" y="86" width="288" height="86" rx="6"/>
+  <text x="540.0" y="124.0" text-anchor="middle" class="t h">Pi process</text>
+  <text x="540.0" y="142.0" text-anchor="middle" class="m s">extensions and extension tools</text>
+  <text x="540.0" y="160.0" text-anchor="middle" class="m s">still run here, unless they delegate</text>
+  <path class="line" d="M540 188 V212" marker-end="url(#a)"/>
+  <rect class="gdash" x="380" y="214" width="320" height="76" rx="6"/>
+  <text x="394" y="232" text-anchor="start" class="m s">local Linux micro-VM</text>
+  <rect class="core" x="396" y="240" width="288" height="40" rx="6"/>
+  <text x="540.0" y="265.0" text-anchor="middle" class="t h">Built-in tools and ! commands</text>
+  <text x="20" y="372" text-anchor="start" class="t h">Same question for both:</text>
+  <text x="20" y="392" text-anchor="start" class="m s">What did you mount, which credentials did you pass in, and is the network open?</text>
+  <text x="20" y="410" text-anchor="start" class="m s">Env-var keys are visible inside the container, and may be inside Gondolin's VM. Docker Sandboxes can keep the real key on the host.</text>
+  <text x="20" y="428" text-anchor="start" class="m s">A read-write mount lets Pi change host files directly.</text>
+</svg>

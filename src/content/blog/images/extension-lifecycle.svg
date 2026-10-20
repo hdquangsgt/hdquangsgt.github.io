@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="576" viewBox="0 0 720 576" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .gdash { fill: none; stroke: #0b6b52; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .frame { fill: none; stroke: #b4b9bf; stroke-width: 1; stroke-dasharray: 3 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #595f67; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .gdash { stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .none { stroke: #6b737c; }
+      .frame { stroke: #4a5159; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line, .dash { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="576"/>
+  <text x="20" y="24" text-anchor="start" class="t h">Where an extension can hook in, in order</text>
+  <rect class="frame" x="30" y="121" width="668" height="308" rx="6"/>
+  <rect class="frame" x="60" y="261" width="638" height="140" rx="6"/>
+  <text x="690" y="136" text-anchor="end" class="m s">each turn</text>
+  <text x="690" y="276" text-anchor="end" class="m s">each tool call</text>
+  <rect class="core" x="20" y="40" width="250" height="22" rx="4"/>
+  <text x="30" y="55" text-anchor="start" class="t mono">input</text>
+  <text x="290" y="55" text-anchor="start" class="m s">can consume or transform raw input</text>
+  <rect class="ext" x="20" y="68" width="250" height="22" rx="4"/>
+  <text x="30" y="83" text-anchor="start" class="t mono">before_agent_start</text>
+  <text x="290" y="83" text-anchor="start" class="m s">change prompt sections, tools, context</text>
+  <rect class="box" x="20" y="96" width="250" height="22" rx="4"/>
+  <text x="30" y="111" text-anchor="start" class="t mono">agent_start</text>
+  <text x="290" y="111" text-anchor="start" class="m s">run begins</text>
+  <rect class="box" x="54" y="124" width="216" height="22" rx="4"/>
+  <text x="64" y="139" text-anchor="start" class="t mono">turn_start</text>
+  <text x="290" y="139" text-anchor="start" class="m s">repeats while tool results need another request</text>
+  <rect class="ext" x="54" y="152" width="216" height="22" rx="4"/>
+  <text x="64" y="167" text-anchor="start" class="t mono">context</text>
+  <text x="290" y="167" text-anchor="start" class="m s">filter or transform messages for one request</text>
+  <rect class="ext" x="54" y="180" width="216" height="22" rx="4"/>
+  <text x="64" y="195" text-anchor="start" class="t mono">before_provider_request</text>
+  <text x="290" y="195" text-anchor="start" class="m s">change headers or the serialized payload</text>
+  <rect class="box" x="54" y="208" width="216" height="22" rx="4"/>
+  <text x="64" y="223" text-anchor="start" class="t mono">after_provider_response</text>
+  <text x="290" y="223" text-anchor="start" class="m s">observe the provider response</text>
+  <rect class="box" x="54" y="236" width="216" height="22" rx="4"/>
+  <text x="64" y="251" text-anchor="start" class="t mono">message_start/update/end</text>
+  <text x="290" y="251" text-anchor="start" class="m s">message_end can replace a final message</text>
+  <rect class="box" x="88" y="264" width="182" height="22" rx="4"/>
+  <text x="98" y="279" text-anchor="start" class="t mono">tool_execution_start</text>
+  <text x="290" y="279" text-anchor="start" class="m s">per tool call</text>
+  <rect class="core" x="88" y="292" width="182" height="22" rx="4"/>
+  <text x="98" y="307" text-anchor="start" class="t mono">tool_call</text>
+  <text x="290" y="307" text-anchor="start" class="m s">authorize, change input, or block</text>
+  <rect class="box" x="88" y="320" width="182" height="22" rx="4"/>
+  <text x="98" y="335" text-anchor="start" class="t mono">tool_execution_update</text>
+  <text x="290" y="335" text-anchor="start" class="m s">progress; nested calls carry parentToolCallId</text>
+  <rect class="ext" x="88" y="348" width="182" height="22" rx="4"/>
+  <text x="98" y="363" text-anchor="start" class="t mono">tool_result</text>
+  <text x="290" y="363" text-anchor="start" class="m s">redact, annotate, or replace the result</text>
+  <rect class="box" x="88" y="376" width="182" height="22" rx="4"/>
+  <text x="98" y="391" text-anchor="start" class="t mono">tool_execution_end</text>
+  <text x="290" y="391" text-anchor="start" class="m s"></text>
+  <rect class="box" x="54" y="404" width="216" height="22" rx="4"/>
+  <text x="64" y="419" text-anchor="start" class="t mono">turn_end</text>
+  <text x="290" y="419" text-anchor="start" class="m s">can add entries and request a continuation</text>
+  <rect class="box" x="20" y="432" width="250" height="22" rx="4"/>
+  <text x="30" y="447" text-anchor="start" class="t mono">agent_end</text>
+  <text x="290" y="447" text-anchor="start" class="m s">ends one run, not necessarily the last</text>
+  <rect class="ext" x="20" y="460" width="250" height="22" rx="4"/>
+  <text x="30" y="475" text-anchor="start" class="t mono">agent_before_settle</text>
+  <text x="290" y="475" text-anchor="start" class="m s">can append entries, request one more run</text>
+  <rect class="box" x="20" y="488" width="250" height="22" rx="4"/>
+  <text x="30" y="503" text-anchor="start" class="t mono">agent_settled</text>
+  <text x="290" y="503" text-anchor="start" class="m s">nothing left to do automatically</text>
+  <rect class="core" x="20" y="530" width="18" height="14" rx="3"/>
+  <text x="46" y="542" text-anchor="start" class="m s">can block or cancel</text>
+  <rect class="ext" x="210" y="530" width="18" height="14" rx="3"/>
+  <text x="236" y="542" text-anchor="start" class="m s">can transform or inject</text>
+  <rect class="box" x="420" y="530" width="18" height="14" rx="3"/>
+  <text x="446" y="542" text-anchor="start" class="m s">observe or mark a stage</text>
+</svg>
