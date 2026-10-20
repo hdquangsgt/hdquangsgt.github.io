@@ -1,0 +1,83 @@
+---
+import type { MarkdownHeading } from 'astro';
+import { langFromUrl, useTranslations } from '../i18n';
+
+export interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+const t = useTranslations(langFromUrl(Astro.url));
+---
+
+<nav class="toc" aria-labelledby="toc-title">
+  <details open data-toc>
+    <summary id="toc-title">{t.post.onThisPage}</summary>
+    <ol>
+      {
+        headings.map((h) => (
+          <li class={`toc-depth-${h.depth}`}>
+            <a href={`#${h.slug}`}>{h.text}</a>
+          </li>
+        ))
+      }
+    </ol>
+  </details>
+</nav>
+
+<script>
+  // Without JavaScript the list is plain in-page links, open on every screen size.
+  const toc = document.querySelector<HTMLDetailsElement>('[data-toc]');
+  if (toc) {
+    const wide = window.matchMedia('(min-width: 65rem)');
+    // Sidebar on wide screens: always open and not collapsible. Collapsed by default on narrow ones.
+    const sync = () => {
+      toc.open = wide.matches;
+      toc.dataset.static = String(wide.matches);
+    };
+    sync();
+    wide.addEventListener('change', sync);
+    toc.querySelector('summary')?.addEventListener('click', (e) => {
+      if (wide.matches) e.preventDefault();
+    });
+
+    // Scroll-spy: mark the last heading that has passed the top of the viewport.
+    // IntersectionObserver fires only when a heading crosses the line, instead of on every scroll event.
+    const links = new Map<string, HTMLAnchorElement>();
+    for (const a of toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) links.set(decodeURIComponent(a.hash.slice(1)), a);
+    const headings = [...links.keys()].map((id) => document.getElementById(id)).filter((el): el is HTMLElement => !!el);
+    let current: HTMLAnchorElement | undefined;
+    const setCurrent = (id: string) => {
+      const next = links.get(id);
+      if (!next || next === current) return;
+      current?.removeAttribute('aria-current');
+      next.setAttribute('aria-current', 'location');
+      current = next;
+      // Keep the active entry visible when the sidebar itself scrolls (long tables of contents).
+      const box = toc.closest<HTMLElement>('.toc');
+      if (wide.matches && box && box.scrollHeight > box.clientHeight) {
+        const boxRect = box.getBoundingClientRect();
+        const linkRect = next.getBoundingClientRect();
+        if (linkRect.top < boxRect.top + 24 || linkRect.bottom > boxRect.bottom - 24) {
+          box.scrollTop += linkRect.top - boxRect.top - box.clientHeight / 2;
+        }
+      }
+    };
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        const first = headings.find((h) => visible.has(h.id));
+        if (first) return setCurrent(first.id);
+        // No heading in the band: stay on the last one that scrolled above it.
+        const above = headings.filter((h) => h.getBoundingClientRect().top < 0).pop();
+        if (above) setCurrent(above.id);
+      },
+      { rootMargin: '0px 0px -70% 0px' },
+    );
+    for (const h of headings) observer.observe(h);
+  }
+</script>

@@ -1,0 +1,10 @@
+---
+import TaxonomyView from '../../../views/TaxonomyView.astro';
+import { tagPaths, type TaxonomyProps } from '../../../utils/paths';
+
+export const getStaticPaths = () => tagPaths('en');
+
+type Props = TaxonomyProps;
+---
+
+<TaxonomyView kind="tag" {...Astro.props} />

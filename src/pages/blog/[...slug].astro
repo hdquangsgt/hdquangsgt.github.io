@@ -1,0 +1,10 @@
+---
+import ArticleView from '../../views/ArticleView.astro';
+import { articlePaths } from '../../utils/paths';
+
+export const getStaticPaths = () => articlePaths('en');
+
+type Props = import('../../views/ArticleView.astro').Props;
+---
+
+<ArticleView {...Astro.props} />

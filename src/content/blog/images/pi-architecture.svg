@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="470" viewBox="0 0 720 470" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .t { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="470"/>
+
+  <!-- Interfaces -->
+  <text x="20" y="28" class="t h">Ways to drive Pi</text>
+  <rect class="box" x="20" y="40" width="160" height="44" rx="6"/>
+  <text x="100" y="60" text-anchor="middle" class="t h">Interactive TUI</text>
+  <text x="100" y="76" text-anchor="middle" class="m mono">pi-tui</text>
+  <rect class="box" x="195" y="40" width="160" height="44" rx="6"/>
+  <text x="275" y="60" text-anchor="middle" class="t h">Print / JSON</text>
+  <text x="275" y="76" text-anchor="middle" class="m mono">--mode json</text>
+  <rect class="box" x="370" y="40" width="160" height="44" rx="6"/>
+  <text x="450" y="60" text-anchor="middle" class="t h">RPC</text>
+  <text x="450" y="76" text-anchor="middle" class="m mono">JSONL on stdin/stdout</text>
+  <rect class="box" x="545" y="40" width="155" height="44" rx="6"/>
+  <text x="622" y="60" text-anchor="middle" class="t h">TypeScript SDK</text>
+  <text x="622" y="76" text-anchor="middle" class="m mono">in-process</text>
+
+  <path class="line" d="M360 84 V112" marker-end="url(#a)"/>
+
+  <!-- coding agent -->
+  <rect class="core" x="20" y="116" width="470" height="62" rx="6"/>
+  <text x="36" y="140" class="t h">pi-coding-agent</text>
+  <text x="36" y="160" class="m">sessions (tree), context files, compaction, trust, settings</text>
+
+  <!-- extensions -->
+  <rect class="ext" x="510" y="116" width="190" height="150" rx="6"/>
+  <text x="526" y="140" class="t h">Extensions &amp; packages</text>
+  <text x="526" y="162" class="m">TypeScript, in-process</text>
+  <text x="526" y="186" class="m mono">registerTool()</text>
+  <text x="526" y="204" class="m mono">registerCommand()</text>
+  <text x="526" y="222" class="m mono">on("tool_call") → block</text>
+  <text x="526" y="244" class="m">skills, prompts, themes</text>
+  <text x="526" y="260" class="m">providers, UI widgets</text>
+
+  <!-- agent core -->
+  <rect class="core" x="20" y="194" width="470" height="62" rx="6"/>
+  <text x="36" y="218" class="t h">pi-agent-core</text>
+  <text x="36" y="238" class="m">agent loop: model turn → tool calls → results → next turn</text>
+
+  <!-- pi-ai -->
+  <rect class="core" x="20" y="272" width="470" height="62" rx="6"/>
+  <text x="36" y="296" class="t h">pi-ai</text>
+  <text x="36" y="316" class="m">one streaming API over Anthropic, OpenAI, Google, Ollama, …</text>
+
+  <path class="line" d="M508 225 H494" marker-end="url(#a)"/>
+
+  <!-- tools -->
+  <path class="line" d="M255 334 V368" marker-end="url(#a)"/>
+  <rect class="os" x="20" y="372" width="680" height="80" rx="6"/>
+  <text x="36" y="396" class="t h">Built-in tools run as the OS user that started Pi</text>
+  <text x="36" y="418" class="m mono">read  write  edit  bash   (default)      grep  find  ls   (opt-in)</text>
+  <text x="36" y="438" class="m">No path fence, no approval prompt by default: reach = whatever the process can reach</text>
+</svg>

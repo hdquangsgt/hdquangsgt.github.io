@@ -1,0 +1,116 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import { SITE } from '../consts';
+import { DEFAULT_LANG, langFromUrl, LOCALE_META, localizePath, useTranslations, type Lang } from '../i18n';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  tags?: string[];
+  noindex?: boolean;
+  /** URL of this page in each language that has a version, for hreflang links. */
+  alternates?: Partial<Record<Lang, string>>;
+}
+
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const {
+  title,
+  description = t.siteDescription,
+  image = SITE.ogImage,
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  tags = [],
+  noindex = false,
+  alternates = {},
+} = Astro.props;
+
+const fullTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${t.siteDescription}`;
+// Astro.site is the production domain from astro.config.mjs, so canonical URLs never point at localhost.
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image, Astro.site);
+
+const jsonLd =
+  type === 'article'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: title,
+        description,
+        url: canonical.href,
+        mainEntityOfPage: canonical.href,
+        image: imageUrl.href,
+        datePublished: publishedTime?.toISOString(),
+        dateModified: (modifiedTime ?? publishedTime)?.toISOString(),
+        inLanguage: LOCALE_META[lang].htmlLang,
+        author: { '@type': 'Person', name: SITE.author, url: Astro.site?.href },
+        keywords: tags.join(', ') || undefined,
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SITE.title,
+        description: t.siteDescription,
+        inLanguage: LOCALE_META[lang].htmlLang,
+        url: Astro.site?.href,
+      };
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<Font cssVariable="--font-text" preload={[{ weight: '400', style: 'normal', subset: lang === 'vi' ? 'vietnamese' : 'latin' }]} />
+<Font cssVariable="--font-heading" preload={[{ weight: '600', style: 'normal', subset: lang === 'vi' ? 'vietnamese' : 'latin' }]} />
+<Font cssVariable="--font-code" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={`${SITE.title} (${LOCALE_META[lang].name})`}
+  href={new URL(localizePath(lang, '/rss.xml'), Astro.site)}
+/>
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex" />}
+{
+  Object.entries(alternates).map(([l, href]) => (
+    <link rel="alternate" hreflang={LOCALE_META[l as Lang].htmlLang} href={new URL(href, Astro.site)} />
+  ))
+}
+{alternates[DEFAULT_LANG] && <link rel="alternate" hreflang="x-default" href={new URL(alternates[DEFAULT_LANG], Astro.site)} />}
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE.title} />
+<meta property="og:locale" content={LOCALE_META[lang].ogLocale} />
+{
+  Object.keys(alternates)
+    .filter((l) => l !== lang)
+    .map((l) => <meta property="og:locale:alternate" content={LOCALE_META[l as Lang].ogLocale} />)
+}
+<meta property="og:url" content={canonical} />
+<meta property="og:title" content={title ?? SITE.title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+{publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime.toISOString()} />}
+{tags.map((tag) => <meta property="article:tag" content={tag} />)}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title ?? SITE.title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

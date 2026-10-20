@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import { getPublishedPosts } from '../utils/posts';
+
+const recent = (await getPublishedPosts()).slice(0, 3);
+---
+
+<BaseLayout title="Page not found" description="The page you were looking for doesn't exist." noindex alternates={{}}>
+  <header class="page-header">
+    <p class="eyebrow">404</p>
+    <h1>Page not found</h1>
+    <p class="page-lead">
+      The page may have moved, or the link may be mistyped. Try the <a href="/blog/">article archive</a> or the
+      <a href="/">homepage</a>.
+    </p>
+  </header>
+  {
+    recent.length > 0 && (
+      <section aria-labelledby="recent-title">
+        <h2 id="recent-title" class="section-label">Recent articles</h2>
+        <PostList posts={recent} headingLevel="h3" />
+      </section>
+    )
+  }
+</BaseLayout>

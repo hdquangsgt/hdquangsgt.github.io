@@ -1,0 +1,41 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { useTranslations } from '../i18n';
+import { categoryUrl, isUnpublished, postLang, postUrl, readingTime, type Post } from '../utils/posts';
+
+export interface Props {
+  posts: Post[];
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { posts, headingLevel: Heading = 'h2' } = Astro.props;
+---
+
+<ol class="post-list">
+  {
+    posts.map((post) => {
+      const lang = postLang(post);
+      const t = useTranslations(lang);
+      const { pubDate, title, description, category, draft } = post.data;
+      const status = draft ? t.post.draft : isUnpublished(post) ? t.post.scheduled : undefined;
+      return (
+        <li class="post-item" data-post-id={post.id}>
+          <p class="post-item-date">
+            <FormattedDate date={pubDate} />
+          </p>
+          <div class="post-item-body">
+            <Heading class="post-item-title">
+              <a href={postUrl(post)}>{title}</a>
+              {status && <span class="status">{status}</span>}
+            </Heading>
+            {description && <p class="post-item-description">{description}</p>}
+            <p class="post-item-meta">
+              <span>{t.post.minRead(readingTime(post.body, lang))}</span>
+              <a href={categoryUrl(category, lang)}>{t.categories[category]}</a>
+            </p>
+          </div>
+        </li>
+      );
+    })
+  }
+</ol>

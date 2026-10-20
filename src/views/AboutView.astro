@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, SOCIAL_LINKS } from '../consts';
+import { localizePath, useTranslations, type Lang } from '../i18n';
+
+export interface Props {
+  lang: Lang;
+}
+
+// Editable content lives in src/i18n.ts (UI.<lang>.about). Keep it to facts you are comfortable publishing.
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const { about } = t;
+---
+
+<BaseLayout title={about.title} description={about.description}>
+  <article class="page">
+    <header class="page-header">
+      <h1>{about.title}</h1>
+    </header>
+    <div class="prose">
+      <p>{about.intro(SITE.author)}</p>
+
+      <h2>{about.interestsTitle}</h2>
+      <ul>{about.interests.map((item) => <li>{item}</li>)}</ul>
+
+      <h2>{about.topicsTitle}</h2>
+      <ul>{about.topics.map((item) => <li>{item}</li>)}</ul>
+      <p>{about.labelsNote}</p>
+
+      <h2>{about.elsewhere}</h2>
+      <ul>
+        {
+          SOCIAL_LINKS.map((link) => (
+            <li>
+              <a href={link.href} rel="me">{link.label}</a>
+            </li>
+          ))
+        }
+        <li><a href={localizePath(lang, '/rss.xml')}>{about.rssFeed}</a></li>
+      </ul>
+    </div>
+  </article>
+</BaseLayout>

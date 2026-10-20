@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import TopicNav from '../components/TopicNav.astro';
+import type { Category } from '../consts';
+import { langFromUrl, localizePath, useTranslations, type Lang } from '../i18n';
+import type { Post } from '../utils/posts';
+
+export interface Props {
+  kind: 'category' | 'tag';
+  name: string;
+  posts: Post[];
+  alternates: Partial<Record<Lang, string>>;
+}
+
+const { kind, name, posts, alternates } = Astro.props;
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+const matching =
+  kind === 'category' ? posts.filter((p) => p.data.category === name) : posts.filter((p) => p.data.tags.includes(name));
+const heading = kind === 'category' ? t.categories[name as Category] : `#${name}`;
+const description = kind === 'category' ? t.categoryDescription(heading) : t.tagDescription(name);
+---
+
+<BaseLayout title={heading} description={description} alternates={alternates}>
+  <header class="page-header">
+    <p class="eyebrow">
+      <a href={localizePath(lang, '/blog/')}>{t.blog.title}</a> / {kind === 'category' ? t.topic.category : t.topic.tag}
+    </p>
+    <h1>{heading}</h1>
+    <p class="page-lead">{t.articles(matching.length)}</p>
+  </header>
+  <TopicNav posts={posts} current={name} />
+  <PostList posts={matching} />
+</BaseLayout>

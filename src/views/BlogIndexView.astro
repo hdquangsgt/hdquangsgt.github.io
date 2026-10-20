@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import TopicNav from '../components/TopicNav.astro';
+import { localizePath, useTranslations, type Lang } from '../i18n';
+import { getPublishedPosts } from '../utils/posts';
+
+export interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const posts = await getPublishedPosts(lang);
+const blogHome = localizePath(lang, '/blog/');
+---
+
+<BaseLayout title={t.blog.title} description={t.blog.description}>
+  <header class="page-header">
+    <h1>{t.blog.title}</h1>
+    <p class="page-lead">{t.blog.lead}</p>
+  </header>
+
+  <form
+    class="search"
+    role="search"
+    data-search
+    data-index={localizePath(lang, '/search.json')}
+    data-status={t.blog.searchStatus}
+    hidden
+  >
+    <label for="search-input">{t.blog.searchLabel}</label>
+    <input id="search-input" type="search" name="q" autocomplete="off" placeholder={t.blog.searchPlaceholder} />
+    <p class="search-status" aria-live="polite" data-search-status></p>
+  </form>
+
+  <TopicNav posts={posts} />
+
+  {
+    posts.length > 0 ? (
+      <section aria-label={t.blog.title}>
+        <PostList posts={posts} />
+        <p class="empty-state" data-search-empty hidden>
+          {t.blog.noMatch} {t.blog.tryDifferent} <a href={blogHome}>{t.blog.clearSearch}</a>.
+        </p>
+      </section>
+    ) : (
+      <p class="empty-state">{t.home.noPosts}</p>
+    )
+  }
+</BaseLayout>
+
+<script>
+  // Progressive enhancement: the archive works without JavaScript; this adds search
+  // over the locale's search.json, which is generated from article metadata and full text.
+  type Entry = { id: string; title: string; description: string; category: string; tags: string[]; text: string };
+
+  const form = document.querySelector<HTMLFormElement>('[data-search]');
+  const input = document.querySelector<HTMLInputElement>('#search-input');
+  const status = document.querySelector<HTMLElement>('[data-search-status]');
+  const empty = document.querySelector<HTMLElement>('[data-search-empty]');
+  const items = [...document.querySelectorAll<HTMLElement>('.post-item[data-post-id]')];
+
+  if (form && input && items.length > 0) {
+    form.hidden = false;
+    form.addEventListener('submit', (event) => event.preventDefault());
+
+    let index: Map<string, string> | undefined;
+    const load = async () => {
+      if (index) return index;
+      const res = await fetch(form.dataset.index ?? '/search.json');
+      if (!res.ok) throw new Error(`search index: ${res.status}`);
+      const entries: Entry[] = await res.json();
+      index = new Map(
+        entries.map((e) => [e.id, [e.title, e.description, e.category, e.tags.join(' '), e.text].join(' ').toLowerCase()]),
+      );
+      return index;
+    };
+
+    const apply = async () => {
+      const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+      let idx: Map<string, string>;
+      try {
+        idx = await load();
+      } catch {
+        // The index can't be loaded, so search can't work: show the full list and hide the form.
+        for (const item of items) item.hidden = false;
+        if (empty) empty.hidden = true;
+        form.hidden = true;
+        return;
+      }
+      let shown = 0;
+      for (const item of items) {
+        const haystack = idx.get(item.dataset.postId ?? '') ?? '';
+        const match = terms.every((t) => haystack.includes(t));
+        item.hidden = !match;
+        if (match) shown++;
+      }
+      if (empty) empty.hidden = shown > 0;
+      if (status) {
+        status.textContent = terms.length
+          ? (form.dataset.status ?? '').replace('{shown}', String(shown)).replace('{total}', String(items.length))
+          : '';
+      }
+    };
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('q')) {
+      input.value = params.get('q') ?? '';
+      apply();
+    }
+    input.addEventListener('focus', () => void load().catch(() => {}), { once: true });
+    input.addEventListener('input', () => void apply());
+  }
+</script>

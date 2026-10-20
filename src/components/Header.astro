@@ -1,0 +1,84 @@
+---
+import { NAV_LINKS, SITE } from '../consts';
+import { langFromUrl, LOCALE_META, LOCALES, localizePath, useTranslations, type Lang } from '../i18n';
+
+export interface Props {
+  /** URL of this page in each language. Languages without a version link to their homepage. */
+  alternates: Partial<Record<Lang, string>>;
+}
+
+const { alternates } = Astro.props;
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+const path = Astro.url.pathname;
+const isActive = (href: string) => path === href || (href !== localizePath(lang, '/') && path.startsWith(href));
+---
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="site-title" href={localizePath(lang, '/')}>{SITE.title}</a>
+    <nav aria-label="Main">
+      <ul class="nav-list">
+        {
+          NAV_LINKS.map((link) => {
+            const href = localizePath(lang, link.href);
+            return (
+              <li>
+                <a href={href} aria-current={isActive(href) ? 'page' : undefined}>
+                  {t.nav[link.key]}
+                </a>
+              </li>
+            );
+          })
+        }
+        <li><a href={localizePath(lang, '/rss.xml')}>{t.nav.rss}</a></li>
+      </ul>
+    </nav>
+    <div class="lang-switcher">
+      <select data-lang-select aria-label={t.languageSwitcher} hidden>
+        {
+          LOCALES.map((l) => (
+            <option value={alternates[l] ?? localizePath(l, '/')} lang={LOCALE_META[l].htmlLang} selected={l === lang}>
+              {LOCALE_META[l].name}
+              {alternates[l] ? '' : ` (${t.languageHome})`}
+            </option>
+          ))
+        }
+      </select>
+      <noscript>
+        <ul class="lang-links" aria-label={t.languageSwitcher}>
+          {
+            LOCALES.map((l) => (
+              <li>
+                <a
+                  href={alternates[l] ?? localizePath(l, '/')}
+                  hreflang={LOCALE_META[l].htmlLang}
+                  lang={LOCALE_META[l].htmlLang}
+                  aria-current={l === lang ? 'true' : undefined}
+                >
+                  {l.toUpperCase()}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </noscript>
+    </div>
+  </div>
+</header>
+
+<script>
+  // The language menu needs JavaScript to navigate, so it stays hidden (and the <noscript> links
+  // show instead) until this runs. Each option's value is the URL of the same page in that language.
+  const select = document.querySelector<HTMLSelectElement>('[data-lang-select]');
+  if (select) {
+    select.hidden = false;
+    select.addEventListener('change', () => {
+      window.location.href = select.value;
+    });
+    // Back/forward cache can restore the page with a stale selection.
+    window.addEventListener('pageshow', () => {
+      for (const option of select.options) option.selected = option.defaultSelected;
+    });
+  }
+</script>

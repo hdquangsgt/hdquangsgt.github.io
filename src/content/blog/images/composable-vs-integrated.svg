@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: #ffffff; }
+    .shell { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .yours { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .t { fill: #1d1f22; }
+    .m { fill: #595f67; }
+    .h { font-weight: 700; }
+    .title { font-size: 14px; font-weight: 700; fill: #1d1f22; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
+    .arrow { fill: #595f67; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #121416; }
+      .shell { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .yours { fill: #241b33; stroke: #c6a2f5; }
+      .t, .title { fill: #e4e6e8; }
+      .m { fill: #a2a9b1; }
+      .line { stroke: #a2a9b1; }
+      .arrow { fill: #a2a9b1; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="720" height="420"/>
+
+  <!-- Integrated -->
+  <text x="20" y="28" class="title">Integrated agent (product)</text>
+  <rect class="shell" x="20" y="42" width="320" height="300" rx="8"/>
+  <text x="36" y="66" class="t h">One vendor-shipped harness</text>
+  <rect class="core" x="36" y="80" width="288" height="34" rx="5"/>
+  <text x="50" y="102" class="t">CLI, desktop, web, and IDE surfaces</text>
+  <rect class="core" x="36" y="122" width="288" height="34" rx="5"/>
+  <text x="50" y="144" class="t">Permission modes, rules, sandbox</text>
+  <rect class="core" x="36" y="164" width="288" height="34" rx="5"/>
+  <text x="50" y="186" class="t">Sub-agents, plan mode, web tools</text>
+  <rect class="core" x="36" y="206" width="288" height="34" rx="5"/>
+  <text x="50" y="228" class="t">Agent loop + tools</text>
+  <rect class="yours" x="36" y="256" width="288" height="70" rx="5"/>
+  <text x="50" y="278" class="t">You add: hooks, skills, MCP,</text>
+  <text x="50" y="296" class="t">plugins, settings</text>
+  <text x="50" y="314" class="m">extension points the product defines</text>
+
+  <!-- Composable -->
+  <text x="380" y="28" class="title">Composable core (Pi)</text>
+  <rect class="yours" x="380" y="42" width="320" height="70" rx="8"/>
+  <text x="396" y="66" class="t h">Your orchestrator / UI</text>
+  <text x="396" y="86" class="m">CI job, chat bot, editor plugin, web UI,</text>
+  <text x="396" y="102" class="m">tmux script spawning more Pi instances</text>
+  <path class="line" d="M540 112 V136" marker-end="url(#a)"/>
+  <text x="550" y="130" class="m mono">RPC / SDK / JSON</text>
+
+  <rect class="yours" x="380" y="140" width="320" height="202" rx="8"/>
+  <text x="396" y="162" class="t h">Your boundary: container / VM</text>
+  <rect class="core" x="396" y="174" width="288" height="40" rx="5"/>
+  <text x="410" y="199" class="t">Pi core: loop + 4 default tools</text>
+  <rect class="yours" x="396" y="222" width="140" height="58" rx="5"/>
+  <text x="408" y="244" class="t">Your extensions</text>
+  <text x="408" y="262" class="m">policy, plan mode,</text>
+  <text x="408" y="276" class="m">sub-agents</text>
+  <rect class="yours" x="544" y="222" width="140" height="58" rx="5"/>
+  <text x="556" y="244" class="t">Your tools</text>
+  <text x="556" y="262" class="m">CLIs + READMEs,</text>
+  <text x="556" y="276" class="m">MCP servers</text>
+  <rect class="core" x="396" y="288" width="288" height="40" rx="5"/>
+  <text x="410" y="313" class="t">pi-ai → any supported provider</text>
+
+  <text x="20" y="376" class="m">Solid green boxes are shipped by the project. Dashed purple boxes are what you build or configure.</text>
+  <text x="20" y="396" class="m">The integrated agent ships most layers; the composable core ships the middle and leaves the edges to you.</text>
+</svg>

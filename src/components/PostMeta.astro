@@ -1,0 +1,28 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { useTranslations } from '../i18n';
+import { isUnpublished, postLang, readingTime, type Post } from '../utils/posts';
+
+export interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const lang = postLang(post);
+const t = useTranslations(lang);
+const { pubDate, updatedDate, draft } = post.data;
+const status = draft ? t.post.draft : isUnpublished(post) ? t.post.scheduled : undefined;
+---
+
+<p class="post-meta">
+  <FormattedDate date={pubDate} />
+  {
+    updatedDate && (
+      <span>
+        {t.post.updated} <FormattedDate date={updatedDate} />
+      </span>
+    )
+  }
+  <span>{t.post.minRead(readingTime(post.body, lang))}</span>
+  {status && <span class="status">{status}</span>}
+</p>

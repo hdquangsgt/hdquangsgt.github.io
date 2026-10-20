@@ -1,0 +1,9 @@
+---
+import BlogIndexView from '../../../views/BlogIndexView.astro';
+import type { Lang } from '../../../i18n';
+import { localeParams } from '../../../utils/paths';
+
+export const getStaticPaths = localeParams;
+---
+
+<BlogIndexView lang={Astro.params.lang as Lang} />

@@ -1,0 +1,52 @@
+---
+import { langFromUrl, localizePath, useTranslations } from '../i18n';
+import { categoriesWithCounts, categoryUrl, tagsWithCounts, tagUrl, type Post } from '../utils/posts';
+
+export interface Props {
+  posts: Post[];
+  /** Highlights the current category or tag page. */
+  current?: string;
+}
+
+const { posts, current } = Astro.props;
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+const path = Astro.url.pathname;
+const blogHome = localizePath(lang, '/blog/');
+const categories = categoriesWithCounts(posts);
+const tags = tagsWithCounts(posts);
+---
+
+<nav class="topic-nav" aria-label={t.topic.browse}>
+  <div>
+    <h2 class="topic-heading">{t.topic.categories}</h2>
+    <ul class="chip-list">
+      <li><a class="chip" href={blogHome} aria-current={path === blogHome ? 'page' : undefined}>{t.topic.all}</a></li>
+      {
+        categories.map((c) => (
+          <li>
+            <a class="chip" href={categoryUrl(c.name, lang)} aria-current={current === c.name ? 'page' : undefined}>
+              {t.categories[c.name]} <span class="count" aria-label={t.articles(c.count)}>{c.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  {
+    tags.length > 0 && (
+      <div>
+        <h2 class="topic-heading">{t.topic.tags}</h2>
+        <ul class="chip-list">
+          {tags.map((tag) => (
+            <li>
+              <a class="chip chip-tag" href={tagUrl(tag.name, lang)} aria-current={current === tag.name ? 'page' : undefined}>
+                #{tag.name} <span class="count" aria-label={t.articles(tag.count)}>{tag.count}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</nav>

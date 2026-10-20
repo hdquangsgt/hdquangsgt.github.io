@@ -1,0 +1,26 @@
+---
+import { langFromUrl, useTranslations } from '../i18n';
+import { tagUrl } from '../utils/posts';
+
+export interface Props {
+  tags: string[];
+}
+
+const { tags } = Astro.props;
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+{
+  tags.length > 0 && (
+    <ul class="tag-list" aria-label={t.topic.tags}>
+      {tags.map((tag) => (
+        <li>
+          <a class="tag" href={tagUrl(tag, lang)}>
+            #{tag}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}

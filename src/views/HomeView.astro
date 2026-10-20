@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import { RECENT_POSTS_LIMIT, SITE } from '../consts';
+import { localizePath, useTranslations, type Lang } from '../i18n';
+import { categoriesWithCounts, categoryUrl, getPublishedPosts, pickStartHere, postUrl } from '../utils/posts';
+
+export interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const posts = await getPublishedPosts(lang);
+const startHere = pickStartHere(posts);
+const recent = posts.slice(0, RECENT_POSTS_LIMIT);
+const categories = categoriesWithCounts(posts);
+---
+
+<BaseLayout>
+  <section class="intro" aria-labelledby="intro-title">
+    <h1 id="intro-title">{SITE.blogName}</h1>
+    <p class="intro-lead">{t.siteDescription}</p>
+    {
+      startHere && (
+        <p class="intro-start">
+          {t.home.startHere} <a href={postUrl(startHere)}>{startHere.data.title}</a>
+        </p>
+      )
+    }
+    {
+      categories.length > 0 && (
+        <nav class="topic-links" aria-label={t.home.topics}>
+          <ul>
+            {categories.map((c) => (
+              <li>
+                <a href={categoryUrl(c.name, lang)}>{t.categories[c.name]}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+  </section>
+
+  {
+    recent.length > 0 ? (
+      <section class="home-section" aria-labelledby="recent-title">
+        <h2 id="recent-title" class="section-label">{t.home.recent}</h2>
+        <PostList posts={recent} headingLevel="h3" />
+        <p class="archive-link">
+          <a href={localizePath(lang, '/blog/')}>{t.home.browseAll(posts.length)}</a>
+        </p>
+      </section>
+    ) : (
+      <p class="empty-state">{t.home.noPosts}</p>
+    )
+  }
+</BaseLayout>

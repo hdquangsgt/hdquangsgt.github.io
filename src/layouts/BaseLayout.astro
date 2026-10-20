@@ -1,0 +1,36 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { langFromUrl, LOCALE_META, LOCALES, localizePath, unlocalizePath, useTranslations } from '../i18n';
+
+type Props = import('../components/BaseHead.astro').Props & {
+  /** `reading` is a narrow centred column (home, lists); `article` leaves room for the table of contents. */
+  width?: 'reading' | 'article';
+};
+
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+// Most pages exist in every language at the same path; pages that don't
+// (articles, category and tag pages) pass their own `alternates`.
+const alternates =
+  Astro.props.alternates ??
+  Object.fromEntries(LOCALES.map((l) => [l, localizePath(l, unlocalizePath(Astro.url.pathname))]));
+const { width = 'reading', ...headProps } = Astro.props;
+const props = { ...headProps, alternates };
+---
+
+<!doctype html>
+<html lang={LOCALE_META[lang].htmlLang}>
+  <head>
+    <BaseHead {...props} />
+  </head>
+  <body data-width={width}>
+    <a class="skip-link" href="#main">{t.skipLink}</a>
+    <Header alternates={alternates} />
+    <main id="main" class="wrap">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
