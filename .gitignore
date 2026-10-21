@@ -18,3 +18,6 @@ npm-debug.log*
 # Internal working notes (specs, research); not published
 tasks/
 src/plugins/
+
+# Qiita sync dry-run output
+.qiita-preview/

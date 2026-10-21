@@ -11,7 +11,9 @@
     "check": "astro check",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "qiita:sync": "node scripts/qiita/cli.mjs",
+    "test:qiita": "node --test \"scripts/qiita/**/*.test.mjs\""
   },
   "dependencies": {
     "@astrojs/rss": "4.0.19",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "yaml": "2.9.1"
   }
 }

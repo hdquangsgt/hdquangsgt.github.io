@@ -66,7 +66,7 @@ Errors (run fails, naming slug and reason): `qiita.publish: true` on a non-`ja` 
 
 Runs after `npm run build`; the built `dist/` is the source of truth for URLs.
 
-- **Images.** Read `dist/ja/blog/<slug>/index.html`, take `<img>` elements in document order, and pair them with Markdown images in source order. Counts and alt text must match, otherwise fail. Each resolves to `site + src` from the built HTML (hashed `/_astro/…` names). Preflight: `HEAD` each resolved URL on the live site must return 200.
+- **Images.** Read `dist/ja/blog/<slug>/index.html`, take `<img>` elements in document order, and pair them with Markdown images in source order. Counts must match, and alt text must match after entity-decoding and dropping punctuation (the build rewrites `--` to an en dash); otherwise fail. Each resolves to `site + src` from the built HTML (hashed `/_astro/…` names). Preflight: `HEAD` each resolved URL on the live site must return 200.
 - **SVG fallback (default).** Replace each image with `> **図:** <alt>` and `[図を開く (SVG)](absolute-url)`. If the probe shows hotlinked SVG renders, option `svg: hotlink` emits normal `![alt](url)`. PNG generation is a contingency (changes blog assets) and is not planned.
 - **Links.** Relative and root links resolve against the post's canonical URL; the target must exist in `dist/`. `#anchor` links become `blog-url#id`, with the id verified in the built HTML (Qiita generates its own heading anchors).
 - **Callouts.** `<div class="callout …">` (variants: documented, observed, opinion, proposal, plain) becomes `:::note info`; `<span class="label …">X</span>` becomes bold `**X**`, preserving meaning.
@@ -86,13 +86,13 @@ Facts for the Japanese Pi article: 12 images (13 SVG files exist; one is unused 
 
 - **Update:** slug has `synced` entry and hash differs: `PATCH`. Hash equal: skip. `PATCH` is idempotent and may be retried.
 - **Create:** write `pending` (hash, `startedAt`) to the map **before** `POST`. On success, set `synced` with id and url.
-- **Never retry a possibly-successful create.** If `POST` errored, timed out or returned an unparseable body, the slug stays `pending` and further creation is blocked.
+- **Never retry a possibly-successful create.** If `POST` hit a network error, timed out, returned 5xx, or returned a body without an `id`, the slug stays `pending` and further creation is blocked. A 4xx response means Qiita definitively rejected the request, so the `pending` entry is removed instead (a bad token or invalid payload needs no manual recovery).
 - **Recovery on next run** for a `pending` slug: list the user's items and find an exact title match created after `startedAt`. One match: adopt its id. Zero: stop and print `--recover <slug> --item-id <id>` and `--recover <slug> --not-created`. Several: stop. (Depends on the unverified listing behavior; manual flags are the fallback.)
 - **Slug rename guard:** a mapped slug whose file is gone, plus a new post with the same title, fails with instructions to re-key the map.
 
 ## Unpublish
 
-`--unpublish <slug>` only: allowlisted slug; load map entry; `GET` the item; require id, URL and title to match the map and the owner to match the token's user; in CI also require `confirm_slug` equal to the slug. `DELETE`; 404 means already gone; 200 or 204 removes the map entry. Any mismatch aborts with nothing deleted.
+`--unpublish <slug>` only: allowlisted slug; load map entry; `GET` the item; require id, URL and title to match the map and the owner to match the token's user; always require `--confirm <slug>` equal to the slug (workflow input `confirm_slug`), and refuse while the post still has `qiita.publish: true` (otherwise the next sync would recreate it). `DELETE`; 404 means already gone; 200 or 204 removes the map entry. Any mismatch aborts with nothing deleted.
 
 ## Credentials
 
@@ -107,7 +107,7 @@ All HTTP goes through one `request()` function. In dry-run it throws on any non-
 - Trigger: `workflow_dispatch` only. Inputs: `dry_run` (default true), `unpublish_slug`, `confirm_slug`.
 - `concurrency: { group: qiita-sync, cancel-in-progress: false }`.
 - Job `sync`: `permissions: contents: read`; has `QIITA_TOKEN` (Environment `qiita`, real runs only); checkout, Node 24, `npm ci`, `npm run build`, sync; uploads the map as an artifact and exposes `map_changed`.
-- Job `commit-map`: `permissions: contents: write`; **no secret**; `if: always()` and `map_changed`; commits only `scripts/qiita-map.json` after `git pull --rebase`. It commits only `synced` entries with a confirmed id, never `pending`. This deliberately deviates from "commit only after full success": discarding a confirmed id from a run that later failed would cause a duplicate on the next run.
+- Job `commit-map`: `permissions: contents: write`; **no secret**; `if: always()` and `map_changed`; commits only `scripts/qiita-map.json` after `git pull --rebase`. It commits the whole map, including `pending` entries: the runner is ephemeral, so an uncommitted `pending` entry is lost and the next run would create a duplicate. This deliberately deviates from "commit only after full success". (If a runner is killed before the artifact is saved, check Qiita for a duplicate and use `--recover`.)
 - Pushes with `GITHUB_TOKEN` do not trigger the deploy workflow. If branch protection blocks the push, the job fails visibly and the artifact holds the map.
 - Action versions follow `deploy.yml` (`checkout@v7`).
 

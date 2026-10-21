@@ -20,6 +20,14 @@ const blog = defineCollection({
       featured: z.boolean().default(false),
       draft: z.boolean().default(false),
       author: z.string().optional(),
+      // Optional Qiita opt-in; read only by scripts/qiita/, ignored when rendering.
+      qiita: z
+        .object({
+          publish: z.boolean().default(false),
+          visibility: z.enum(['limited', 'public']).default('limited'),
+          tags: z.array(z.string().min(1)).max(5).optional(),
+        })
+        .optional(),
       coverImage: z
         .object({
           src: image(),
