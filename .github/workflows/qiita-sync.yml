@@ -1,0 +1,107 @@
+# Manual-only sync of opted-in Japanese posts to Qiita. Dry-run by default.
+# Real runs use the `qiita` Environment (holds QIITA_TOKEN; add required reviewers there if you want a gate).
+# The job holding the token has read-only repo access; the job that can push never sees the token.
+name: Sync to Qiita
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: convert and print the plan, send nothing'
+        type: boolean
+        default: true
+      unpublish_slug:
+        description: 'Delete this slug from Qiita (real runs only; the post must have qiita.publish: false)'
+        type: string
+        default: ''
+      confirm_slug:
+        description: 'Repeat the slug to confirm an unpublish'
+        type: string
+        default: ''
+
+concurrency:
+  group: qiita-sync
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  dry-run:
+    if: ${{ inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:qiita
+      - run: npm run build
+      - name: Plan (no network, no token)
+        run: npm run qiita:sync
+
+  apply:
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    environment: qiita
+    permissions:
+      contents: read
+    outputs:
+      map_changed: ${{ steps.sync.outputs.map_changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:qiita
+      - run: npm run build
+      - name: Sync
+        id: sync
+        env:
+          QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
+          UNPUBLISH_SLUG: ${{ inputs.unpublish_slug }}
+          CONFIRM_SLUG: ${{ inputs.confirm_slug }}
+        run: |
+          if [ -n "$UNPUBLISH_SLUG" ]; then
+            npm run qiita:sync -- --apply --unpublish "$UNPUBLISH_SLUG" --confirm "$CONFIRM_SLUG"
+          else
+            npm run qiita:sync -- --apply
+          fi
+      - name: Save the map
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qiita-map
+          path: scripts/qiita-map.json
+          if-no-files-found: error
+
+  commit-map:
+    needs: apply
+    # always(): a run that created an item and then failed must still persist the map (including `pending`
+    # entries), otherwise the next run would create a duplicate.
+    if: ${{ always() && needs.apply.outputs.map_changed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          name: qiita-map
+          path: .qiita-artifact
+      - name: Commit the map
+        run: |
+          cp .qiita-artifact/qiita-map.json scripts/qiita-map.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/qiita-map.json
+          git commit -m "Update Qiita sync map" || exit 0
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
