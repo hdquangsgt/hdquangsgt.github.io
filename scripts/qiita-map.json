@@ -14,6 +14,13 @@
       "url": "https://qiita.com/Quang-Developer/private/c348d9dda1625fcb782d",
       "title": "Pi Agent：柔軟性から責任へ — 信頼できるワークフローを築く",
       "hash": "347cff2f80159a6f90c00822eb79be73886a8e94ba5f09b3a6ca077f996fef54"
+    },
+    "pi-durable-agents-that-survive-crashes": {
+      "state": "synced",
+      "itemId": "b3fa67d15aa60cbe91b8",
+      "url": "https://qiita.com/Quang-Developer/private/b3fa67d15aa60cbe91b8",
+      "title": "Pi Durable：クラッシュを生き延びる AI エージェントを作る",
+      "hash": "29785fc8b6ce7b013359a0192f7417599fd85cf864b981ae7ccb90643b6bfcf9"
     }
   }
 }
