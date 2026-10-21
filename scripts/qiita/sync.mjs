@@ -1,4 +1,4 @@
-import { isDefinitiveFailure, QiitaNetworkError } from './client.mjs';
+import { isDefinitiveFailure, QiitaApiError, QiitaNetworkError } from './client.mjs';
 import { saveMap } from './map.mjs';
 import { assertAllowlisted } from './select.mjs';
 
@@ -141,4 +141,42 @@ export async function preflightAssets(urls, fetchImpl = globalThis.fetch) {
     }
   }
   if (bad.length) throw new Error(`asset preflight failed (is the site deployed?):\n${bad.join('\n')}`);
+}
+
+const isNotFound = (e) => e instanceof QiitaApiError && e.status === 404;
+
+export async function unpublish({ slug, confirm, allowlist, map, mapPath, client }) {
+  assertAllowlisted(slug, allowlist);
+  if (confirm !== slug) throw new Error(`--confirm must repeat the slug exactly ("${slug}")`);
+  const entry = map.items[slug];
+  if (!entry?.itemId || !['synced', 'unpublishing'].includes(entry.state)) {
+    throw new Error(`"${slug}" has no synced Qiita item in the map`);
+  }
+  let remote;
+  try {
+    remote = await client.getItem(entry.itemId);
+  } catch (e) {
+    if (!isNotFound(e)) throw e;
+    delete map.items[slug];
+    saveMap(mapPath, map);
+    return { status: 'already-gone' };
+  }
+  const me = await client.getAuthenticatedUser();
+  const problems = [];
+  if (remote.id !== entry.itemId) problems.push(`id ${remote.id} != ${entry.itemId}`);
+  if (remote.url !== entry.url) problems.push(`url ${remote.url} != ${entry.url}`);
+  if (remote.title !== entry.title) problems.push(`title "${remote.title}" != "${entry.title}"`);
+  if (remote.user?.id !== me.id) problems.push("owner does not match the token's user");
+  if (problems.length) throw new Error(`refusing to delete "${slug}": ${problems.join('; ')}`);
+
+  map.items[slug] = { ...entry, state: 'unpublishing' };
+  saveMap(mapPath, map);
+  try {
+    await client.deleteItem(entry.itemId);
+  } catch (e) {
+    if (!isNotFound(e)) throw e;
+  }
+  delete map.items[slug];
+  saveMap(mapPath, map);
+  return { status: 'deleted' };
 }
