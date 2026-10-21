@@ -2,6 +2,7 @@
 import { Font } from 'astro:assets';
 import '../styles/global.css';
 import { SITE } from '../consts';
+import { earlyPreferencesScript } from '../utils/preferences';
 import { DEFAULT_LANG, langFromUrl, LOCALE_META, localizePath, useTranslations, type Lang } from '../i18n';
 
 export interface Props {
@@ -65,9 +66,12 @@ const jsonLd =
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light dark" />
-<Font cssVariable="--font-text" preload={[{ weight: '400', style: 'normal', subset: lang === 'vi' ? 'vietnamese' : 'latin' }]} />
-<Font cssVariable="--font-heading" preload={[{ weight: '600', style: 'normal', subset: lang === 'vi' ? 'vietnamese' : 'latin' }]} />
+<!-- Light is the default for every reader; dark is opt-in through the reading settings (see global.css). -->
+<meta name="color-scheme" content="light" />
+<!-- Applies stored reading preferences before first paint, so there is no flash of the wrong theme or font. -->
+<script is:inline set:html={earlyPreferencesScript()} />
+<!-- Not preloaded: the default font is the system one, so these load only when a reader picks Sans-serif or code appears. -->
+<Font cssVariable="--font-text" />
 <Font cssVariable="--font-code" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="sitemap" href="/sitemap-index.xml" />

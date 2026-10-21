@@ -127,6 +127,7 @@ A post is published only if **all** of these hold: it is under `src/content/blog
 
 ```sh
 npm run test:qiita                          # unit tests (node --test, no extra dependencies)
+npm run test:plugins                        # build-time Markdown plugins (inline SVG diagrams)
 npm run build && npm run qiita:sync         # dry-run: converts, writes .qiita-preview/, prints the plan, sends nothing
 ```
 

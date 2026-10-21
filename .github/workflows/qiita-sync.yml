@@ -46,6 +46,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:qiita
+      - run: npm run test:plugins
       - run: npm run build
       - name: Plan (no network, no token)
         run: npm run qiita:sync
@@ -86,6 +87,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:qiita
+      - run: npm run test:plugins
       - run: npm run build
       - name: Sync
         id: sync

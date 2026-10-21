@@ -108,3 +108,19 @@ test('warns about footnotes and images that share a line with text', () => {
   const { warnings } = convertBody('text[^1] ![D](./a.svg)\n', ctx({ builtHtml: html }));
   assert.equal(warnings.length, 2);
 });
+
+test('inline diagrams count as images: their standalone file is the source, aria-label the alt', () => {
+  const svg = '<figure><svg class="diagram dg1" role="img" aria-label="A &gt; B &quot;quoted&quot;" data-diagram-src="/diagrams/a.svg" viewBox="0 0 1 1"></svg></figure>';
+  const html = page(`${img('First', '/_astro/p.H.png')}${svg}`);
+  assert.deepEqual(extractImages(html), [
+    { src: '/_astro/p.H.png', alt: 'First' },
+    { src: '/diagrams/a.svg', alt: 'A > B "quoted"' },
+  ]);
+  const { markdown, assetUrls } = convertBody('![First](./p.png)\n![A > B "quoted"](./a.svg)\n', ctx({ builtHtml: html, svgMode: 'hotlink' }));
+  assert.deepEqual(assetUrls, ['https://example.test/_astro/p.H.png', 'https://example.test/diagrams/a.svg']);
+  assert.match(markdown, /^!\[A > B "quoted"\]\(https:\/\/example\.test\/diagrams\/a\.svg\)$/m);
+});
+
+test('other inline svgs are not images', () => {
+  assert.deepEqual(extractImages(page('<svg viewBox="0 0 1 1"><path d="M0 0"/></svg>')), []);
+});

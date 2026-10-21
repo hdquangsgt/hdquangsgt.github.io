@@ -29,18 +29,28 @@ export function altKey(s) {
   return decodeEntities(s).replace(/[^\p{L}\p{N}]+/gu, '');
 }
 
-/** `<img>` elements inside the article body, in document order. */
+// A quoted-attribute-aware tag body, so a `>` inside an alt text does not end the tag early.
+const TAG_BODY = `(?:[^>"']|"[^"]*"|'[^']*')*`;
+const IMAGE_TAG = new RegExp(`<img\\b${TAG_BODY}>|<svg\\b(?=${TAG_BODY}\\bdata-diagram-src=)${TAG_BODY}>`, 'g');
+
+/**
+ * Images inside the article body, in document order: `<img>` elements, and diagrams the site inlines as
+ * `<svg data-diagram-src="/diagrams/x.svg" aria-label="alt">` (see src/markdown/inline-svg.mjs). A diagram's
+ * `src` is the standalone SVG file served at that URL, which is what Qiita hotlinks.
+ */
 export function extractImages(html) {
   const start = html.indexOf('<div class="prose"');
   if (start < 0) throw new ConversionError('built page has no .prose container');
   const end = html.indexOf('<footer class="article-footer"', start);
   const region = html.slice(start, end < 0 ? undefined : end);
   const images = [];
-  for (const m of region.matchAll(/<img\b(?:[^>"']|"[^"]*"|'[^']*')*>/g)) {
+  for (const m of region.matchAll(IMAGE_TAG)) {
     const attrs = {};
     for (const a of m[0].matchAll(/([a-zA-Z-]+)="([^"]*)"/g)) attrs[a[1]] = decodeEntities(a[2]);
-    if (!attrs.src) throw new ConversionError(`built <img> without src: ${m[0].slice(0, 80)}`);
-    images.push({ src: attrs.src, alt: attrs.alt ?? '' });
+    const isDiagram = m[0].startsWith('<svg');
+    const src = isDiagram ? attrs['data-diagram-src'] : attrs.src;
+    if (!src) throw new ConversionError(`built image without src: ${m[0].slice(0, 80)}`);
+    images.push({ src, alt: (isDiagram ? attrs['aria-label'] : attrs.alt) ?? '' });
   }
   return images;
 }

@@ -45,6 +45,18 @@ interface Strings {
   /** Appended to a language name when this page has no version in that language: the link goes to its homepage. */
   languageHome: string;
   skipLink: string;
+  /** Reader preferences (theme, font, text size) in the header. */
+  readingSettings: {
+    open: string;
+    title: string;
+    theme: string;
+    themes: { light: string; dark: string };
+    font: string;
+    fonts: { system: string; sans: string; serif: string; mono: string };
+    size: string;
+    sizes: { small: string; medium: string; large: string; xlarge: string };
+    reset: string;
+  };
   home: { startHere: string; recent: string; topics: string; browseAll: Plural; noPosts: string };
   blog: {
     title: string;
@@ -104,6 +116,17 @@ export const UI: Record<Lang, Strings> = {
     languageSwitcher: 'Language',
     languageHome: 'homepage',
     skipLink: 'Skip to content',
+    readingSettings: {
+      open: 'Reading settings',
+      title: 'Reading settings',
+      theme: 'Theme',
+      themes: { light: 'Light', dark: 'Dark' },
+      font: 'Font',
+      fonts: { system: 'System', sans: 'Sans-serif', serif: 'Serif', mono: 'Monospace' },
+      size: 'Text size',
+      sizes: { small: 'Small', medium: 'Medium', large: 'Large', xlarge: 'Extra large' },
+      reset: 'Reset to defaults',
+    },
     home: {
       startHere: 'New here? Start with',
       recent: 'Recent articles',
@@ -185,6 +208,17 @@ export const UI: Record<Lang, Strings> = {
     languageSwitcher: 'Ngôn ngữ',
     languageHome: 'trang chủ',
     skipLink: 'Chuyển đến nội dung',
+    readingSettings: {
+      open: 'Tùy chỉnh đọc',
+      title: 'Tùy chỉnh đọc',
+      theme: 'Giao diện',
+      themes: { light: 'Sáng', dark: 'Tối' },
+      font: 'Phông chữ',
+      fonts: { system: 'Hệ thống', sans: 'Không chân', serif: 'Có chân', mono: 'Đơn cách' },
+      size: 'Cỡ chữ',
+      sizes: { small: 'Nhỏ', medium: 'Vừa', large: 'Lớn', xlarge: 'Rất lớn' },
+      reset: 'Đặt lại mặc định',
+    },
     home: {
       startHere: 'Mới ghé qua? Hãy bắt đầu với',
       recent: 'Bài viết gần đây',
@@ -272,6 +306,17 @@ export const UI: Record<Lang, Strings> = {
     languageSwitcher: '言語',
     languageHome: 'ホーム',
     skipLink: '本文へスキップ',
+    readingSettings: {
+      open: '表示設定',
+      title: '表示設定',
+      theme: 'テーマ',
+      themes: { light: 'ライト', dark: 'ダーク' },
+      font: 'フォント',
+      fonts: { system: 'システム', sans: 'ゴシック体', serif: '明朝体', mono: '等幅' },
+      size: '文字サイズ',
+      sizes: { small: '小', medium: '標準', large: '大', xlarge: '特大' },
+      reset: '初期設定に戻す',
+    },
     home: {
       startHere: 'はじめての方は',
       recent: '最近の記事',

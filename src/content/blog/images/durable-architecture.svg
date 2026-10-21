@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .store { fill: #eaf1fb; stroke: #1f5fae; stroke-width: 1.5; }
+    .bad { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .redline { stroke: #a33f1c; stroke-width: 1.6; fill: none; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .store { fill: #14233a; stroke: #8db8f0; }
+      .bad { fill: #301c15; stroke: #f3a184; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+    }
+  </style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker></defs>
+  <rect class="bg" width="720" height="420"/>
+  <text x="16" y="24" class="m s h">ONE PROCESS OWNS THE STORAGE</text>
+  <rect class="box" x="40" y="44" width="640" height="60" rx="6"/>
+  <text class="t h" x="360.0" y="64" text-anchor="middle">Your application</text>
+  <text class="m s" x="360.0" y="82" text-anchor="middle">submit() · wait() · watch() · defineTool() · installs extensions in a registry</text>
+  <rect class="core" x="40" y="136" width="640" height="150" rx="8"/>
+  <text class="t h" x="60" y="158">Harness (Harness.open)</text>
+  <rect class="box" x="60" y="172" width="180" height="96" rx="6"/>
+  <text class="t h" x="150.0" y="192" text-anchor="middle">Conversations</text>
+  <text class="m s" x="150.0" y="210" text-anchor="middle">immutable entries</text>
+  <text class="m s" x="150.0" y="225" text-anchor="middle">forks share history</text>
+  <rect class="box" x="270" y="172" width="180" height="96" rx="6"/>
+  <text class="t h" x="360.0" y="192" text-anchor="middle">Tasks</text>
+  <text class="m s" x="360.0" y="210" text-anchor="middle">pi.generation, pi.tool</text>
+  <text class="m s" x="360.0" y="225" text-anchor="middle">checkpoint every step</text>
+  <rect class="box" x="480" y="172" width="180" height="96" rx="6"/>
+  <text class="t h" x="570.0" y="192" text-anchor="middle">Documents</text>
+  <text class="m s" x="570.0" y="210" text-anchor="middle">pi.agent, pi.inbox, pi.live</text>
+  <text class="m s" x="570.0" y="225" text-anchor="middle">your own typed JSON state</text>
+  <text class="m s" x="360" y="304" text-anchor="middle">every change is one atomic commit: entries + documents + tasks, all or nothing</text>
+  <rect class="store" x="40" y="322" width="310" height="70" rx="6"/>
+  <text class="t h" x="195.0" y="342" text-anchor="middle">Storage interface</text>
+  <text class="m s" x="195.0" y="360" text-anchor="middle">Memory · SQLite · JSONL · Durable Object SQLite</text>
+  <rect class="bad" x="380" y="322" width="300" height="70" rx="6"/>
+  <text class="t h" x="530.0" y="342" text-anchor="middle">Outside the commit</text>
+  <text class="m s" x="530.0" y="360" text-anchor="middle">model provider · bash · APIs · email</text>
+  <text class="m s" x="530.0" y="375" text-anchor="middle">(the harness cannot undo these)</text>
+  <path class="line" d="M360 104 V136" marker-end="url(#a)"/>
+  <path class="line" d="M195 286 V322" marker-end="url(#a)"/>
+  <path class="dash" d="M555 268 V322" marker-end="url(#a)"/>
+</svg>

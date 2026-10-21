@@ -4,7 +4,7 @@
 
 | Decision | File | Notes |
 | --- | --- | --- |
-| Colors, type scale, spacing, widths, radius | `src/styles/global.css` (`:root` block, top of file) | Light tokens, then a dark `@media` override |
+| Colors, type scale, spacing, widths, radius | `src/styles/global.css` (`:root` block, top of file) | Light tokens, then a `:root[data-theme='dark']` override |
 | Width primitives, derived widths and per-page overrides | `src/styles/global.css` (`body[data-width=…]`) and `src/layouts/BaseLayout.astro` (`width` prop) | `reading` default, `article` for articles |
 | All component and prose styles | `src/styles/global.css` | One file, ordered: tokens → base → layout → header/footer → page pieces → home and lists → chips and search → article → prose → code → callouts → responsive |
 | Fonts | `astro.config.mjs` (`fonts`) and `src/components/BaseHead.astro` (`<Font>` and preloads) | Japanese fallbacks in `global.css` (`:root:lang(ja)`) |
@@ -83,8 +83,7 @@ These exist in the current implementation. They are recorded so they are not mis
 | 1 | **Mixed breakpoint units.** `40rem`, `600px`, `65rem` and `64.99rem` are all used; 40rem (640px) and 600px are close but not equal. | Media queries in `global.css` | Standardise on `rem` and, ideally, merge the two small breakpoints. |
 | 2 | **Off-scale sizes.** Several sizes are set directly rather than from the type scale: wordmark and list titles (1.375rem), article `h1`, nav (0.9375rem), table cells (0.9375rem). | `global.css` | Add tokens if they are to be reused. |
 | 3 | **Language select outline is faint** (border 1.25:1). | `.lang-switcher select` | Use `--color-text-muted` for the border, as the search input does. |
-| 4 | **Diagram SVGs are light in dark mode.** They have a white background baked in. | `src/content/blog/images/*.svg` | Provide dark variants or transparent backgrounds using `prefers-color-scheme` inside the SVG. |
-| 5 | **Unused file.** `src/plugins/rehype-prose-blocks.mjs` is not referenced (Astro 7's Markdown pipeline needs an extra package for rehype plugins; the wrapping is done by a script instead). | `src/plugins/` | Delete the file. |
+| 5 | **Unused file.** `src/plugins/rehype-prose-blocks.mjs` is not referenced (the Markdown processor is Sätteri; rehype plugins would need `@astrojs/markdown-remark`, and the wrapping is done by a script instead). | `src/plugins/` | Delete the file. |
 | 6 | **README is out of date on JavaScript.** It lists search, copy buttons and the collapsing TOC; the site also has the language select, scroll-spy and table/figure wrapping. | `README.md` | Update the sentence to match the [JavaScript inventory](components.md#javascript-inventory). |
 | 7 | **404 page is English only and has hard-coded text,** unlike the rest of the site. | `src/pages/404.astro` | Move strings to `src/i18n.ts`. |
 | 8 | **Plain-text code blocks show an empty header bar** with only the Copy button. It is consistent, but visually heavier than needed. | `ArticleView.astro` script | Hide the header when there is no language, or float the button. |

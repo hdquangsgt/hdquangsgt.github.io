@@ -6,17 +6,20 @@ All values below come from `src/styles/global.css` (tokens at the top of the fil
 
 ### Font families
 
-| Role | Family | Weights | Token | Used for |
-| --- | --- | --- | --- | --- |
-| Body / UI | Be Vietnam Pro | 400, 500, 600, 700 (+ italics) | `--font-sans` | Body text, `h3`, `h4`, navigation, metadata, buttons |
-| Headings | Newsreader | 500, 600 | `--font-serif` | Page titles (`h1`), `h2`, site wordmark, list titles, pager titles |
-| Code | JetBrains Mono | 400, 600 | `--font-mono` | Inline code, code blocks, tags, counts |
+The reader chooses the font in the reading settings (see [components.md](components.md#reading-settings)). The choice sets `--font-sans` (text) and `--font-serif` (headings, wordmark, list titles) to the **same** stack, so the page uses one family. Code always uses `--font-mono`.
 
-Fonts are fetched from Google Fonts at **build time** and self-hosted, so pages make no runtime requests to Google. Subsets: Latin, Latin Extended and Vietnamese. The Latin body and heading fonts are preloaded (`BaseHead.astro`), using the Vietnamese subset on `/vi/` pages. Astro generates size-adjusted fallbacks to limit layout shift while fonts load.
+| Choice (`data-font`) | Stack token | Family | Loaded as |
+| --- | --- | --- | --- |
+| System (default, no attribute) | `--stack-system` | `system-ui`, Segoe UI, Roboto, then Japanese OS fonts | nothing to download |
+| Sans-serif (`sans`) | `--stack-sans` | Be Vietnam Pro (designed for Vietnamese diacritics) | self-hosted webfont, only when selected |
+| Serif (`serif`) | `--stack-serif` | Georgia, Iowan Old Style, Times New Roman, then Japanese Mincho fonts | nothing to download |
+| Monospace (`mono`) | `--stack-mono` | JetBrains Mono, then OS monospace and Japanese fonts | self-hosted webfont, already used by code blocks |
 
-**Fallbacks.** Newsreader falls back to Georgia, then `serif`. Be Vietnam Pro falls back to `system-ui`.
+Code (`--font-mono`): JetBrains Mono, weights 400 and 600, whichever font is chosen.
 
-**Japanese** (`:root:lang(ja)`): Latin text keeps Be Vietnam Pro / Newsreader. Kana and kanji come from the OS: Hiragino Sans, Hiragino Kaku Gothic ProN, Noto Sans JP, Yu Gothic or Meiryo for sans; Hiragino Mincho ProN, Yu Mincho or Noto Serif JP for serif headings. No Japanese web font is shipped.
+Be Vietnam Pro and JetBrains Mono are fetched from Google Fonts at **build time** and self-hosted, so pages make no runtime requests to Google. Subsets: Latin, Latin Extended and Vietnamese. Neither is preloaded: the default is the system font, and the `@font-face` rules only download a file when text uses it. To add a font choice, add a `--stack-*` token and a `:root[data-font='…']` rule in `global.css`, a value in `PREFERENCE_OPTIONS` (`src/utils/preferences.ts`), and a label in `src/i18n.ts`.
+
+**Japanese.** Every stack ends with the OS Japanese fonts (Hiragino Sans, Hiragino Kaku Gothic ProN, Noto Sans JP, Yu Gothic, Meiryo for sans; Hiragino Mincho ProN, Yu Mincho, Noto Serif JP for serif), so kana and kanji render with an OS font whichever choice is active, on every page. No Japanese web font is shipped.
 
 Other language rules: `:lang(ja)` uses `line-break: strict`, `word-break: auto-phrase` on headings, and no negative letter-spacing; uppercase label transforms are disabled for Japanese.
 
@@ -95,7 +98,7 @@ Widths are layout-critical and are documented, with their relationship to contai
 
 ## Color
 
-Light is the default. Dark applies under `@media (prefers-color-scheme: dark)`. Both sets are tokens on `:root`. The `<meta name="color-scheme">` tag lets form controls follow the theme. The palette is warm-neutral with one green accent.
+Light is the default for every reader, whatever their operating system prefers. Dark applies only under `:root[data-theme='dark']`, which the reading settings set. Both sets are tokens on `:root`, and `color-scheme` is set in CSS per theme so form controls follow it. The site never reads `prefers-color-scheme`. The palette is warm-neutral with one green accent.
 
 ### Core tokens
 
@@ -153,7 +156,7 @@ Rendered Markdown is wrapped in `.prose`. All article content types share these 
 
 ### Code blocks
 
-- Syntax highlighting is Shiki with dual themes: `github-light` and `github-dark`, switched by the OS preference (`astro.config.mjs`). Highlight colors come from Shiki; the **block background** is overridden with `--color-code-bg` so it matches the palette.
+- Syntax highlighting is Shiki with dual themes: `github-light` and `github-dark`, switched by `data-theme` on `<html>` (`astro.config.mjs`, `global.css`). Highlight colors come from Shiki; the **block background** is overridden with `--color-code-bg` so it matches the palette.
 - Font: JetBrains Mono 0.875rem, line height 1.65, tab size 2, 1rem padding, no wrapping (long lines scroll horizontally inside the block).
 - The header bar (2.5rem tall) shows the language and a **Copy** button. The language is shown only when the Markdown fence names one (and it is not `text`, `plaintext` or `txt`). No filename is ever invented.
 - Code blocks fill the content column, the same width as the text.
@@ -176,3 +179,7 @@ Rendered Markdown is wrapped in `.prose`. All article content types share these 
 | Copy button | Muted; border appears on hover; "Copied" in green, "Copy failed" in rust for 2 seconds |
 
 Animation is limited to smooth in-page scrolling (`scroll-behavior: smooth`), applied only under `prefers-reduced-motion: no-preference`. A `prefers-reduced-motion: reduce` rule disables all transitions and animation.
+
+### Text size
+
+`--text-scale` (1 by default; 0.9, 1.12 or 1.25 for `data-size` small, large, xlarge) multiplies the root font size (`html { font-size: calc(100% * var(--text-scale)) }`). Every size in `global.css` is in `rem`, so all text scales together: callouts, tables, code, captions and navigation, not only the article body. Media queries use the browser's own font size, so breakpoints do not move.

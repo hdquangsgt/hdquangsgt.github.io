@@ -13,9 +13,11 @@
     "preview": "astro preview",
     "astro": "astro",
     "qiita:sync": "node scripts/qiita/cli.mjs",
-    "test:qiita": "node --test \"scripts/qiita/**/*.test.mjs\""
+    "test:qiita": "node --test \"scripts/qiita/**/*.test.mjs\"",
+    "test:plugins": "node --test \"src/markdown/**/*.test.mjs\""
   },
   "dependencies": {
+    "@astrojs/markdown-satteri": "0.4.4",
     "@astrojs/rss": "4.0.19",
     "@astrojs/sitemap": "3.7.4",
     "astro": "7.4.0"

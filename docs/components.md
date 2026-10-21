@@ -97,6 +97,8 @@ Built by the article script from Shiki's `<pre class="astro-code" data-language>
 
 ### Table wrapper and figure
 
+Diagrams (`![alt](./x.svg)`) are different: a build-time plugin (`src/markdown/inline-svg.mjs`) replaces the paragraph with the same `figure.figure > div.figure-scroll.figure-scroll-wide` structure and the SVG inline, so the diagram follows the reader's theme. See [Diagrams](#diagrams).
+
 The article script wraps each top-level `<table>` in `div.table-wrap` and each image alone in a paragraph in `figure.figure > div.figure-scroll + figcaption`. Both scroll boxes are `tabindex="0"` so keyboard users can scroll them. Images whose intrinsic `width` is 480 or more get `figure-scroll-wide`, which keeps them at `--scroll-min` on narrow screens (decided from the width, not the file name, because image URLs differ between dev and production). The `<table>` itself stays a real table. Without JavaScript, a bare top-level table is a scrollable block (`.prose > table`) and an image is a centered image.
 
 ### Claim labels and callouts
@@ -124,6 +126,21 @@ Raw HTML in Markdown, using classes defined in `global.css`. Six kinds map to th
 
 "Also available in: …" sits on the right of the article header's top bar, beside the back link (`.post-translations`), and lists only languages that have this article. Languages without it are not linked.
 
+## Reading settings
+
+`ReadingSettings.astro`, in the header on every page: a settings (gear) icon button opening a popover (the native Popover API, so Escape, click-outside and focus return come for free) with three radio groups: **Theme** (Light, Dark), **Font** (System, Sans-serif, Serif, Monospace) and **Text size** (Small, Medium, Large, Extra large), and a "Reset to defaults" link. Defaults: Light, System, Medium.
+
+- Each choice is a `data-theme`, `data-font` or `data-size` attribute on `<html>`; the default value has no attribute. `global.css` reacts to the attributes. `src/utils/preferences.ts` holds the one table of options.
+- Choices are stored in `localStorage` under `reading-prefs` (JSON), inside try/catch. If storage is blocked the choice still applies to the current page. A small inline script in `<head>` (`BaseHead.astro`, generated from the same table) applies stored values before first paint, so there is no flash of the wrong theme. Other open tabs follow through the `storage` event.
+- The control is `hidden` until its script runs, like the language select: without JavaScript there would be nothing to apply the choice, and the site renders its defaults.
+- Labels are in `src/i18n.ts` (`readingSettings`), in all three languages.
+
+## Diagrams
+
+SVG diagrams in `src/content/blog/images/` are standalone, valid SVGs that use `@media (prefers-color-scheme: dark)` inside the file. That is what an `<img>` embed (the Qiita hotlink) follows. On the site, `inline-svg.mjs` rewrites each one at build time: rules are scoped to the diagram (class names collide between files), the dark `@media` block becomes `:root[data-theme="dark"] …`, ids get a per-diagram prefix, and the SVG gets `role="img"` and `aria-label` from the Markdown alt text. The original file is also served at `/diagrams/<name>.svg` (`src/pages/diagrams/[name].svg.ts`), and the inline SVG records it in `data-diagram-src`, which the Qiita sync reads instead of an `<img src>`.
+
+Colors that should follow the site (background, text, muted text, lines) are written `var(--color-*, fallback)` in the SVG source; the fallback is what a standalone `<img>` shows. Semantic fills and strokes (green, purple, rust, blue) stay hard-coded, in both a light and a dark value. Tests: `npm run test:plugins`.
+
 ## Search (Blog index)
 
 `<form data-search hidden>` with a labelled input, filtered client-side against the language's `search.json` (title, description, category, tags and full text). Hidden rows get the `hidden` attribute. A live region (`aria-live="polite"`) reports "N of M articles match." Without JavaScript the form stays hidden and the full list is shown. If the index cannot be fetched (offline, blocked), the form hides itself and the full list is restored, so a broken search is never offered.
@@ -135,6 +152,8 @@ All scripts are small, inline, load only where needed and degrade to working HTM
 | Script | Location | Purpose |
 | --- | --- | --- |
 | Language select | `Header.astro` | Reveal the select; navigate on change; reset on back/forward restore |
+| Reading settings | `ReadingSettings.astro` | Reveal the control; apply and store theme, font and size; follow other tabs |
+| Early preferences (inline, `<head>`) | `BaseHead.astro` | Apply stored preferences before first paint |
 | TOC state and scroll-spy | `TableOfContents.astro` | Open/closed per breakpoint; mark the current section |
 | Table and figure wrapping | `ArticleView.astro` | Scroll boxes; figure captions |
 | Code block header and copy | `ArticleView.astro` | Language label; copy button |

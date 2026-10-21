@@ -1,25 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
   <style>
-    .bg { fill: #ffffff; }
+    .bg { fill: var(--color-bg, #ffffff); }
     .shell { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
     .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
     .yours { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.5; stroke-dasharray: 5 3; }
-    .t { fill: #1d1f22; }
-    .m { fill: #595f67; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
     .h { font-weight: 700; }
     .title { font-size: 14px; font-weight: 700; fill: #1d1f22; }
     .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
-    .arrow { fill: #595f67; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
     @media (prefers-color-scheme: dark) {
-      .bg { fill: #121416; }
+      .bg { fill: var(--color-bg, #121416); }
       .shell { fill: #1a1d20; stroke: #6b737c; }
       .core { fill: #13291f; stroke: #6fd3ae; }
       .yours { fill: #241b33; stroke: #c6a2f5; }
       .t, .title { fill: #e4e6e8; }
-      .m { fill: #a2a9b1; }
-      .line { stroke: #a2a9b1; }
-      .arrow { fill: #a2a9b1; }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .line { stroke: var(--color-text-muted, #a2a9b1); }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
     }
   </style>
   <defs>

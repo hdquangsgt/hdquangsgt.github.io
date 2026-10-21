@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="430" viewBox="0 0 720 430" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
   <style>
-    .bg { fill: #ffffff; }
+    .bg { fill: var(--color-bg, #ffffff); }
     .stage { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
     .none { fill: none; stroke: #8a9099; stroke-width: 1.2; stroke-dasharray: 4 4; }
     .gate { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
     .reach { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
-    .t { fill: #1d1f22; }
-    .m { fill: #595f67; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
     .h { font-weight: 700; }
     .col { fill: #595f67; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
-    .line { stroke: #595f67; stroke-width: 1.4; fill: none; }
-    .arrow { fill: #595f67; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
     @media (prefers-color-scheme: dark) {
-      .bg { fill: #121416; }
+      .bg { fill: var(--color-bg, #121416); }
       .stage { fill: #1a1d20; stroke: #6b737c; }
       .none { stroke: #6b737c; }
       .gate { fill: #13291f; stroke: #6fd3ae; }
       .reach { fill: #301c15; stroke: #f3a184; }
-      .t { fill: #e4e6e8; }
+      .t { fill: var(--color-text, #e4e6e8); }
       .m, .col { fill: #a2a9b1; }
-      .line { stroke: #a2a9b1; }
-      .arrow { fill: #a2a9b1; }
+      .line { stroke: var(--color-text-muted, #a2a9b1); }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
     }
   </style>
   <defs>

@@ -1,5 +1,6 @@
 ---
 import { NAV_LINKS, SITE } from '../consts';
+import ReadingSettings from './ReadingSettings.astro';
 import { langFromUrl, LOCALE_META, LOCALES, localizePath, useTranslations, type Lang } from '../i18n';
 
 export interface Props {
@@ -64,6 +65,7 @@ const isActive = (href: string) => path === href || (href !== localizePath(lang,
         </ul>
       </noscript>
     </div>
+    <ReadingSettings />
   </div>
 </header>
 

@@ -9,7 +9,7 @@ The site is mobile-first in spirit but written as a single stylesheet with a few
 | Article sidebar | `min-width: 65rem` (1040px) | Article body becomes two columns with a sticky table of contents. Below this, the TOC is a collapsible box. (A `max-width: 64.99rem` query styles the box.) |
 | Stacked list rows | `max-width: 40rem` (640px) | Post list rows stack: date above the title. Large images (intrinsic width ≥ 480px) in articles keep a 34rem minimum width and scroll inside their box. |
 | Phone | `max-width: 600px` | Article body text 17px (from 18px); `<main>` top padding 2.5rem (from 4rem); pager stacks vertically. |
-| Color scheme | `prefers-color-scheme: dark` | Dark tokens and Shiki dark theme. |
+| Color scheme | `data-theme='dark'` on `<html>` (reader's choice; the OS setting is ignored) | Dark tokens, Shiki dark theme and dark diagram rules. |
 | Motion | `prefers-reduced-motion: no-preference` / `reduce` | Smooth scroll only when allowed; `reduce` disables transitions and animation. |
 
 Smallest supported width: `body { min-width: 20rem }` (320px). Fluid values (`clamp()`) cover everything between breakpoints: heading sizes scale with the viewport and have no breakpoints of their own.
@@ -76,8 +76,7 @@ The same CSS serves all languages. Checks that apply to any change:
 These are not yet addressed; see also [maintenance.md](maintenance.md#known-inconsistencies).
 
 - The language select's border uses `--color-border` (about 1.25:1), below the 3:1 recommended for UI component boundaries (WCAG 1.4.11). The text is readable; the control's outline is faint.
-- Diagram SVGs have a white background and show as a light card in dark mode. They are legible but bright.
-- No manual light/dark toggle; the site follows the OS only.
+- Diagram SVGs are inlined and follow the chosen theme. Verified in both themes: no text/background pair below 4.5:1 among 393 labels in 16 diagrams.
 - Screen-reader testing and an automated audit (axe or Lighthouse) have not been run. Items above were checked by inspecting markup and CSS, and keyboard behaviour was exercised in a browser.
 
 ## Verification checklist for design changes

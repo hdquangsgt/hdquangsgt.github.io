@@ -10,7 +10,7 @@ The articles are long-form and technical. They contain code, tables, diagrams, a
 
 - Software developers and technically curious engineers reading long articles, often in one sitting.
 - Readers of Vietnamese and Japanese as well as English. All three languages are first-class design targets, not translations bolted on.
-- Readers on phones, laptops and large monitors, in light or dark mode (the site follows the operating-system setting).
+- Readers on phones, laptops and large monitors, in light or dark mode. Light is the default; readers can switch theme, font and text size in the reading settings.
 
 ## Goals
 
@@ -36,12 +36,12 @@ Body text is held to roughly 65–80 characters per line. Articles use a single 
 
 ### Typography carries the hierarchy
 
-Titles and `h2` are set in a serif (Newsreader); body, `h3`, `h4`, navigation and metadata are sans-serif (Be Vietnam Pro); code is monospace (JetBrains Mono). Size and weight steps are large enough that levels are distinguishable without color or ornament.
+By default the whole page uses the system font; readers can switch to Be Vietnam Pro, a system serif or JetBrains Mono (see [visual-system.md](visual-system.md#font-families)). Code is monospace (JetBrains Mono). Size and weight steps are large enough that levels are distinguishable without color or ornament.
 
 ### Multilingual by design
 
-- Body font Be Vietnam Pro was designed for Vietnamese diacritics; line height is generous because Vietnamese stacks marks above and below the line.
-- Japanese text falls back to the operating system's Japanese fonts, with Mincho (serif) for headings to match the Latin serif. Japanese uses strict line breaking and no letter-spacing or uppercase transforms.
+- Be Vietnam Pro (the Sans-serif choice) was designed for Vietnamese diacritics; line height is generous because Vietnamese stacks marks above and below the line.
+- Japanese text falls back to the operating system's Japanese fonts (Mincho for the serif choice). Japanese uses strict line breaking and no letter-spacing or uppercase transforms.
 - Layout must not depend on English text lengths: lists, headers and the table of contents wrap rather than truncate.
 
 ### Accessibility by default
@@ -64,6 +64,6 @@ No framework runtime, no CSS framework, no icon or UI libraries. The only client
 ## What the design deliberately does not have
 
 - A featured-post hero or large cards on the home page. A single "New here? Start with…" link points to the introductory article instead.
-- A manual theme toggle. Light and dark follow `prefers-color-scheme`.
+- Following the operating-system color scheme. Light is always the default; dark is opt-in.
 - Pagination, comments, ads, newsletter prompts or popups.
 - Per-article styling. All articles share one prose style (see [maintenance.md](maintenance.md#adding-content-types)).

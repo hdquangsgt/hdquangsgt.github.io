@@ -1,6 +1,8 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { satteri } from '@astrojs/markdown-satteri';
+import inlineSvg from './src/markdown/inline-svg.mjs';
 
 // Root-level user site (hdquangsgt.github.io), so no `base` is needed.
 export default defineConfig({
@@ -12,19 +14,11 @@ export default defineConfig({
     defaultLocale: 'en',
     routing: { prefixDefaultLocale: false },
   },
-  // Self-hosted at build time (no runtime requests to Google). Be Vietnam Pro (body) was designed
-  // for Vietnamese diacritics; Newsreader (headings) has Vietnamese coverage too. Japanese text falls
+  // Self-hosted at build time (no runtime requests to Google). Only used when a reader picks it in the reading
+  // settings: Be Vietnam Pro (the "Sans-serif" option, designed for Vietnamese diacritics) and JetBrains Mono
+  // (code, and the "Monospace" option). The default and the serif option use system fonts. Japanese text falls
   // back to the OS Japanese fonts (see global.css).
   fonts: [
-    {
-      provider: fontProviders.google(),
-      name: 'Newsreader',
-      cssVariable: '--font-heading',
-      weights: [500, 600],
-      styles: ['normal'],
-      subsets: ['latin', 'latin-ext', 'vietnamese'],
-      fallbacks: ['Georgia', 'serif'],
-    },
     {
       provider: fontProviders.google(),
       name: 'Be Vietnam Pro',
@@ -50,6 +44,8 @@ export default defineConfig({
     }),
   ],
   markdown: {
+    // Diagrams (![alt](./x.svg)) are inlined so they follow the reader's theme; see src/markdown/inline-svg.mjs.
+    processor: satteri({ mdastPlugins: [inlineSvg()] }),
     shikiConfig: {
       themes: { light: 'github-light', dark: 'github-dark' },
       wrap: false,
