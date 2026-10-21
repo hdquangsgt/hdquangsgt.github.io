@@ -16,6 +16,7 @@
 | Reading time, related posts, URLs, "start here" selection | `src/utils/posts.ts` | |
 | SEO and social tags, structured data | `src/components/BaseHead.astro` | Canonical, `hreflang`, Open Graph, JSON-LD |
 | RSS and search index | `src/utils/feeds.ts` | |
+| Qiita sync (opt-in, allowlist, conversion, API client, map) | `scripts/qiita/`, `scripts/qiita-map.json`, `.github/workflows/qiita-sync.yml` | Separate from the Astro build; spec in `docs/superpowers/specs/2026-10-21-qiita-sync-design.md` |
 | Background specs | `tasks/guide_create_blog.md` (original spec), `tasks/layout/design.md` (design review) | Historical input, not authoritative for current values |
 
 ## Principles for changes
@@ -98,3 +99,37 @@ When you fix one, delete its row and update the affected document.
 - Each document says what it owns. Put a fact in one place and link to it from the others.
 - When you change a token or width, update the tables in [visual-system.md](visual-system.md) or [layout-and-pages.md](layout-and-pages.md) in the same change, and the review date in [README.md](README.md).
 - Mark anything aspirational as a **Recommendation** or in the table above. Do not describe unimplemented design as current.
+
+## Qiita sync
+
+### Configuration
+
+- Frontmatter (`qiita.publish`, `qiita.visibility`, `qiita.tags`) is validated by `src/content.config.ts`; rendering ignores it.
+- `scripts/qiita/allowlist.json` is a second, independent gate: a flagged post whose slug is not listed fails the run. Adding a post takes two edits (allowlist and frontmatter).
+- `visibility` is part of the content hash. `limited` is the default; nothing is public until `visibility: public` is committed.
+- `scripts/qiita-map.json` maps each slug to its Qiita item (`pending`, `synced` or `unpublishing`). Do not edit it by hand except for the rename and recovery cases below.
+
+### Commands
+
+| Goal | Command |
+| --- | --- |
+| Preview | `npm run build && npm run qiita:sync` (reads `dist/`, writes `.qiita-preview/<slug>.md`, no network) |
+| Publish or update | Actions → *Sync to Qiita* with *Dry run* unticked, or locally `QIITA_TOKEN=… npm run qiita:sync -- --apply` after a build |
+| Switch an SVG fallback to hotlinked images | add `--svg hotlink` (only after the probe shows Qiita renders them) |
+| Unpublish | set `qiita.publish: false`, merge, then `--apply --unpublish <slug> --confirm <slug>` (workflow inputs `unpublish_slug` and `confirm_slug`) |
+
+Images cannot be uploaded through the API, so each diagram becomes a text caption plus a link to the SVG on the blog; the site must already be deployed (the sync checks every asset URL first). Callouts become `:::note info`; any HTML Qiita might mangle stops the run instead of being dropped.
+
+### Recovery
+
+- **`pending` entry** (a create may or may not have succeeded): rerun the sync; it looks for exactly one matching item created after the attempt and adopts it. If it cannot decide, check Qiita and run `--apply --recover <slug> --item-id <id>` (the item exists) or `--apply --recover <slug> --not-created` (it does not). Never delete a `pending` entry by hand without checking Qiita first, or the next run may create a duplicate.
+- **`unpublishing` entry**: the delete was interrupted. Rerun the same `--unpublish` command.
+- **Rename**: the sync refuses when a mapped slug's file disappears and a new post has the same title. Rename the key in `scripts/qiita-map.json` to the new slug.
+- **Runner killed mid-run**: the map artifact may be missing. Check Qiita for a duplicate before rerunning.
+- **Push of the map blocked** (branch protection): download the `qiita-map` artifact and commit `scripts/qiita-map.json` yourself.
+
+### Verified and unverified Qiita behavior
+
+Verified from the API docs: create/update/delete endpoints and required fields, item `id` and `url` in responses, the 1000 requests/hour limit, no image upload endpoint. Not yet verified against a live account (run `scripts/qiita/probe.mjs` and record the results below): that `private: true` is URL-only and unsearchable, the Bearer header, tag limits and characters, SVG rendering, which HTML survives sanitizing, and the authenticated-user item listing used for recovery.
+
+Probe results: _not run yet._

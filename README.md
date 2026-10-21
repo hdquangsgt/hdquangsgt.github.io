@@ -49,6 +49,10 @@ docker run --rm -it -p 4321:4321 -v "$PWD":/app -v hdq-node-modules:/app/node_mo
    # coverImage:                  # optional; also used as the social preview image
    #   src: ./images/cover.png
    #   alt: 'What the image shows'
+   # qiita:                       # optional, Japanese posts only; see "Publishing to Qiita"
+   #   publish: true
+   #   visibility: limited        # limited (default) or public
+   #   tags: [AI, Claude]         # optional, max 5; defaults to the post's tags
    ---
    ```
 
@@ -114,3 +118,16 @@ One-time setup, not done yet:
 After that, every push to `main` redeploys. Pull requests run the same validation and build without deploying.
 
 No secrets are needed: the build uses only public files, and nothing private ends up in the output.
+
+## Publishing to Qiita (optional)
+
+Selected Japanese posts can be mirrored to Qiita. The blog itself is unaffected; the sync lives in `scripts/qiita/` and is never part of the deploy.
+
+A post is published only if **all** of these hold: it is under `src/content/blog/ja/`, its slug is listed in `scripts/qiita/allowlist.json`, and its frontmatter has `qiita: { publish: true }`. Drafts and future-dated posts are skipped. Removing the flag never deletes anything on Qiita.
+
+```sh
+npm run test:qiita                          # unit tests (node --test, no extra dependencies)
+npm run build && npm run qiita:sync         # dry-run: converts, writes .qiita-preview/, prints the plan, sends nothing
+```
+
+Real runs happen from **Actions → Sync to Qiita → Run workflow** (untick *Dry run*), which needs a `qiita` Environment with a `QIITA_TOKEN` secret (token scopes `read_qiita` and `write_qiita`). New items are created as limited sharing until the post says `visibility: public`. See [docs/maintenance.md](docs/maintenance.md#qiita-sync) for recovery and unpublishing.
