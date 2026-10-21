@@ -4,9 +4,16 @@
     "pi-agent-freedom-vs-convenience": {
       "state": "synced",
       "itemId": "8c6c77d515879e339cba",
-      "url": "https://qiita.com/Quang-Developer/private/8c6c77d515879e339cba",
-      "title": "Pi Agent：自由と利便性のトレードオフ",
-      "hash": "96d70ed444e2f6112a01e4ed9948438b0657d3629939dc222e3e3a89c1817a74"
+      "url": "https://qiita.com/Quang-Developer/items/8c6c77d515879e339cba",
+      "title": "Pi Agent：自由と利便性 — アーキテクチャを理解する",
+      "hash": "346dadc586ae8bf0c8f23016e84bb3154e65b6c377bb1e0d5a2c8d2f8614f473"
+    },
+    "pi-agent-freedom-vs-convenience-part-2": {
+      "state": "synced",
+      "itemId": "c348d9dda1625fcb782d",
+      "url": "https://qiita.com/Quang-Developer/private/c348d9dda1625fcb782d",
+      "title": "Pi Agent：柔軟性から責任へ — 信頼できるワークフローを築く",
+      "hash": "347cff2f80159a6f90c00822eb79be73886a8e94ba5f09b3a6ca077f996fef54"
     }
   }
 }
