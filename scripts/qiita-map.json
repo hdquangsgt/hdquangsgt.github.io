@@ -1,4 +1,12 @@
 {
   "version": 1,
-  "items": {}
+  "items": {
+    "pi-agent-freedom-vs-convenience": {
+      "state": "synced",
+      "itemId": "8c6c77d515879e339cba",
+      "url": "https://qiita.com/Quang-Developer/private/8c6c77d515879e339cba",
+      "title": "Pi Agent：自由と利便性のトレードオフ",
+      "hash": "96d70ed444e2f6112a01e4ed9948438b0657d3629939dc222e3e3a89c1817a74"
+    }
+  }
 }
