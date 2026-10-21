@@ -6,6 +6,9 @@ category: AI Agents
 tags: [pi, coding-agents, security, architecture, claude-code]
 featured: false
 draft: false
+qiita:
+  publish: true
+  visibility: limited
 ---
 
 <div class="callout">

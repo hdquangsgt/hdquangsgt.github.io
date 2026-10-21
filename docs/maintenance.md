@@ -114,9 +114,13 @@ When you fix one, delete its row and update the affected document.
 | Goal | Command |
 | --- | --- |
 | Preview | `npm run build && npm run qiita:sync` (reads `dist/`, writes `.qiita-preview/<slug>.md`, no network) |
-| Publish or update | Actions → *Sync to Qiita* with *Dry run* unticked, or locally `QIITA_TOKEN=… npm run qiita:sync -- --apply` after a build |
-| Switch an SVG fallback to hotlinked images | add `--svg hotlink` (only after the probe shows Qiita renders them) |
+| Publish or update | Automatic after each successful deploy of `main` (see below); or Actions → *Sync to Qiita* with *Dry run* unticked; or locally `QIITA_TOKEN=… npm run qiita:sync -- --apply` after a build |
+| Diagram images as a caption plus link instead of hotlinked images | add `--svg link` (the default is `--svg hotlink`, which the probe showed Qiita renders) |
 | Unpublish | set `qiita.publish: false`, merge, then `--apply --unpublish <slug> --confirm <slug>` (workflow inputs `unpublish_slug` and `confirm_slug`) |
+
+**Automatic runs.** The *Sync to Qiita* workflow starts by itself when *Deploy to GitHub Pages* completes successfully for a push to `main` (never for pull requests), and checks out exactly the deployed commit, so image URLs are live. Nothing changes on Qiita unless a post is allowlisted, flagged `qiita.publish: true`, and its content hash changed. The sync commits `scripts/qiita-map.json` itself with `GITHUB_TOKEN`, which does not trigger another deploy, so there is no loop.
+
+**Going public.** New items are created with `visibility: limited` (URL-only). After checking the item logged out, change that post's `qiita.visibility` to `public` and push; the next automatic run updates the existing item rather than creating a new one, because `visibility` is part of the hash and the item id is in the map.
 
 Real workflow runs are only allowed from `main` (anywhere else the run fails with an error), so the map is always committed to the branch the next run will read. A local `--apply` run (and any `--recover`, which the workflow has no inputs for) must be followed immediately by committing and pushing `scripts/qiita-map.json`, and must never overlap with a workflow run; forgetting either can create a duplicate Qiita item. Also restrict the `qiita` Environment's deployment branches to `main` in the repository settings.
 
@@ -132,6 +136,15 @@ Images cannot be uploaded through the API, so each diagram becomes a text captio
 
 ### Verified and unverified Qiita behavior
 
-Verified from the API docs: create/update/delete endpoints and required fields, item `id` and `url` in responses, the 1000 requests/hour limit, no image upload endpoint. Not yet verified against a live account (run `scripts/qiita/probe.mjs` and record the results below): that `private: true` is URL-only and unsearchable, the Bearer header, tag limits and characters, SVG rendering, which HTML survives sanitizing, and the authenticated-user item listing used for recovery.
+Verified from the API docs: create/update/delete endpoints and required fields, item `id` and `url` in responses, the 1000 requests/hour limit, no image upload endpoint. Verified by the live probe (results below): the Bearer header, `private: true` creating a URL-only item, the authenticated-user item listing including limited-sharing items, update and delete, and hotlinked SVG rendering. Still unverified: that limited-sharing items are excluded from Qiita search, which exact tag characters are accepted, and which raw HTML Qiita keeps.
 
-Probe results: _not run yet._
+Probe results (2026-10-21, run by the repo owner against a live account with a throwaway limited-sharing item, which was deleted afterwards):
+
+- `GET /authenticated_user` with `Authorization: Bearer <token>`: ok.
+- `POST /items` with `private: true`: ok; the response had `private: true`. A limited-sharing item's URL has the shape `https://qiita.com/<user>/private/<id>`.
+- Tags: the sent tag `test` came back as `テスト`, so Qiita rewrites tag names; never compare returned tags with sent ones.
+- `PATCH /items/:id` (title and body): ok.
+- `GET /authenticated_user/items`: ok, and it listed the limited-sharing probe item.
+- `PATCH` with 6 tags, and with a tag containing a space and punctuation: both `403 Forbidden` with no explanation. Consistent with the 5-tag limit (also enforced by Qiita CLI's own validator) and tag-format rules, but the reason is not given. The sync keeps its 5-tag cap.
+- `DELETE /items/:id`: ok.
+- Reported by the owner from a logged-out browser: the item was visible by URL, the hotlinked SVG image rendered and the callouts rendered. Not reported, so still unverified: whether it appears in Qiita search, and how a `<div class="callout">`/`<span>` left as raw HTML renders (the sync converts those anyway and fails closed on any other HTML).

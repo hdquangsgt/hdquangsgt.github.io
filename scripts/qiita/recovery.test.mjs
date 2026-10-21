@@ -88,6 +88,17 @@ test('preflightAssets requires every unique URL to answer 200', async () => {
   await preflightAssets(['https://x/a.svg', 'https://x/a.svg', 'https://x/b.svg'], ok);
   assert.deepEqual(seen, [['https://x/a.svg', 'HEAD'], ['https://x/b.svg', 'HEAD']]);
   const mixed = async (u) => (u.endsWith('b.svg') ? { status: 404 } : { status: 200 });
-  await assert.rejects(preflightAssets(['https://x/a.svg', 'https://x/b.svg'], mixed), /b\.svg -> 404/);
-  await assert.rejects(preflightAssets(['https://x/a.svg'], async () => { throw new Error('offline'); }), /offline/);
+  await assert.rejects(preflightAssets(['https://x/a.svg', 'https://x/b.svg'], mixed, { delayMs: 0 }), /b\.svg -> 404/);
+  await assert.rejects(preflightAssets(['https://x/a.svg'], async () => { throw new Error('offline'); }, { delayMs: 0 }), /offline/);
+});
+
+test('preflightAssets retries so a deploy that is still propagating does not fail the run', async () => {
+  let n = 0;
+  const flaky = async () => ({ status: ++n < 3 ? 404 : 200 });
+  await preflightAssets(['https://x/a.svg'], flaky, { attempts: 3, delayMs: 0 });
+  assert.equal(n, 3);
+  let m = 0;
+  const never = async () => (m++, { status: 404 });
+  await assert.rejects(preflightAssets(['https://x/a.svg'], never, { attempts: 3, delayMs: 0 }), /a\.svg -> 404/);
+  assert.equal(m, 3);
 });

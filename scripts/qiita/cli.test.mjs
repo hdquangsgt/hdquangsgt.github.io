@@ -55,7 +55,8 @@ test('dry-run (the default) makes no network call, writes a preview, and leaves 
   assert.deepEqual(p.calls, []);
   assert.equal(existsSync(p.mapPath), false);
   const preview = readFileSync(path.join(p.deps.previewDir, 'pi.md'), 'utf8');
-  assert.match(preview, /図を開く/);
+  assert.match(preview, /^!\[Diagram\]\(https:\/\/example\.test\/_astro\/d\.H\.svg\)$/m);
+  assert.doesNotMatch(preview, /図を開く/);
   assert.match(p.logs.join('\n'), /pi: create/);
 });
 
@@ -146,4 +147,10 @@ test('a local --apply that changes the map reminds you to commit it (duplicate g
   const ci = project();
   assert.equal(await main(['--apply'], { QIITA_TOKEN: 'tok', GITHUB_OUTPUT: path.join(ci.root, 'out') }, ci.deps), 0);
   assert.doesNotMatch(ci.logs.join('\n'), /commit and push/);
+});
+
+test('--svg link switches to the text-caption fallback', async () => {
+  const p = project();
+  assert.equal(await main(['--svg', 'link'], {}, p.deps), 0);
+  assert.match(readFileSync(path.join(p.deps.previewDir, 'pi.md'), 'utf8'), /図を開く/);
 });

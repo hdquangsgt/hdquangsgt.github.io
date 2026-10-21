@@ -27,12 +27,12 @@ No Qiita token was available during design; nothing was tested against a live ac
 | Responses include `id`, `url`; rate limit 1000 req/h authenticated | Verified | API docs |
 | No image upload endpoint | Verified (none documented) | API docs |
 | Non-GET requests need `write_qiita` token | Verified | API docs |
-| `private: true` = limited sharing: URL-only, not searchable | **Unverified** (secondary sources disagree on defaults) | Live probe |
-| `Authorization: Bearer <token>` header | **Unverified** | Live probe |
-| Tag count / character limits | **Unverified** | Live probe |
-| SVG images render (hotlinked) | **Unverified** | Live probe |
+| `private: true` creates a URL-only item (response `private: true`, URL `/<user>/private/<id>`); not searchable | Created and URL-visible: **verified** (probe 2026-10-21). Search exclusion: **unverified** | Live probe |
+| `Authorization: Bearer <token>` header | **Verified** (probe; also used by Qiita CLI's client) | Live probe |
+| Tag limits | 5 max, 1 min: Qiita CLI validator; probe got an unexplained 403 for 6 tags. Characters: **unverified**. Qiita also rewrites tag names (`test` came back as `テスト`) | Live probe, Qiita CLI source |
+| SVG images render (hotlinked) | **Verified** by the owner in a logged-out browser (probe 2026-10-21) | Live probe |
 | `<div>`, `<span>`, HTML comments survive sanitizing | **Unverified** | Live probe |
-| `GET /authenticated_user/items` usable for crash recovery | **Unverified** | Live probe |
+| `GET /authenticated_user/items` usable for crash recovery | **Verified** (it listed the limited-sharing probe item) | Live probe |
 
 ### Step 0: live probe
 
@@ -104,7 +104,8 @@ All HTTP goes through one `request()` function. In dry-run it throws on any non-
 
 ## GitHub Actions: `.github/workflows/qiita-sync.yml`
 
-- Trigger: `workflow_dispatch` only. Inputs: `dry_run` (default true), `unpublish_slug`, `confirm_slug`.
+- Triggers (amended 2026-10-21, after the live probe): `workflow_run` of *Deploy to GitHub Pages* (completed, successful, `push` to `main` only, checked out at the deployed commit so image URLs are live), plus `workflow_dispatch` with inputs `dry_run` (default true), `unpublish_slug`, `confirm_slug`. Dry-run and the wrong-branch guard only react to manual dispatch. Pushes with `GITHUB_TOKEN` do not trigger the deploy workflow, so the map commit cannot loop. Automatic runs still publish only allowlisted, flagged posts, and the first create stays `visibility: limited` until the post is changed to `public`.
+- Image URLs default to hotlinking (`--svg hotlink`) because the probe showed Qiita renders them; `--svg link` keeps the caption-and-link fallback.
 - `concurrency: { group: qiita-sync, cancel-in-progress: false }`.
 - Job `sync`: `permissions: contents: read`; has `QIITA_TOKEN` (Environment `qiita`, real runs only); checkout, Node 24, `npm ci`, `npm run build`, sync; uploads the map as an artifact and exposes `map_changed`.
 - Job `commit-map`: `permissions: contents: write`; **no secret**; `if: always()` and `map_changed`; commits only `scripts/qiita-map.json` after `git pull --rebase`. It commits the whole map, including `pending` entries: the runner is ephemeral, so an uncommitted `pending` entry is lost and the next run would create a duplicate. This deliberately deviates from "commit only after full success". (If a runner is killed before the artifact is saved, check Qiita for a duplicate and use `--recover`.)

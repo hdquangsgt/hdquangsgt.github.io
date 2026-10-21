@@ -129,16 +129,22 @@ export function checkRenames({ map, eligible, allSlugs }) {
   }
 }
 
-/** Every image URL must already be live, otherwise Qiita would show broken images. */
-export async function preflightAssets(urls, fetchImpl = globalThis.fetch) {
+/** Every image URL must already be live, otherwise Qiita would show broken images. Retries cover a deploy still propagating. */
+export async function preflightAssets(urls, fetchImpl = globalThis.fetch, { attempts = 3, delayMs = 5000 } = {}) {
   const bad = [];
   for (const url of new Set(urls)) {
-    try {
-      const res = await fetchImpl(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000) });
-      if (res.status !== 200) bad.push(`${url} -> ${res.status}`);
-    } catch (e) {
-      bad.push(`${url} -> ${e.message}`);
+    let problem;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const res = await fetchImpl(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000) });
+        problem = res.status === 200 ? undefined : `${url} -> ${res.status}`;
+      } catch (e) {
+        problem = `${url} -> ${e.message}`;
+      }
+      if (!problem) break;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
+    if (problem) bad.push(problem);
   }
   if (bad.length) throw new Error(`asset preflight failed (is the site deployed?):\n${bad.join('\n')}`);
 }

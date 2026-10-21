@@ -1,6 +1,7 @@
 // Usage (see docs/maintenance.md):
 //   npm run qiita:sync                      dry-run: converts, writes .qiita-preview/, prints the plan, no network
 //   npm run qiita:sync -- --apply           create/update on Qiita (needs QIITA_TOKEN and a fresh `npm run build`)
+//   (--svg link replaces diagram images with a caption and a link; the default hotlinks them from the blog)
 //   npm run qiita:sync -- --apply --unpublish <slug> --confirm <slug>
 //   npm run qiita:sync -- --apply --recover <slug> (--item-id <id> | --not-created)
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -68,7 +69,7 @@ export async function main(argv, env, overrides = {}) {
         recover: { type: 'string' },
         'item-id': { type: 'string' },
         'not-created': { type: 'boolean', default: false },
-        svg: { type: 'string', default: 'link' },
+        svg: { type: 'string', default: 'hotlink' },
       },
     });
     if (!['link', 'hotlink'].includes(values.svg)) throw new Error('--svg must be "link" or "hotlink"');

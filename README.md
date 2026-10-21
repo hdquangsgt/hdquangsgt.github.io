@@ -130,4 +130,4 @@ npm run test:qiita                          # unit tests (node --test, no extra 
 npm run build && npm run qiita:sync         # dry-run: converts, writes .qiita-preview/, prints the plan, sends nothing
 ```
 
-Real runs happen from **Actions → Sync to Qiita → Run workflow** (untick *Dry run*), which needs a `qiita` Environment with a `QIITA_TOKEN` secret (token scopes `read_qiita` and `write_qiita`). New items are created as limited sharing until the post says `visibility: public`. See [docs/maintenance.md](docs/maintenance.md#qiita-sync) for recovery and unpublishing.
+Real runs happen automatically after each successful deploy of `main`, or by hand from **Actions → Sync to Qiita → Run workflow** (untick *Dry run*). Both need a `qiita` Environment with a `QIITA_TOKEN` secret (token scopes `read_qiita` and `write_qiita`). New items are created as limited sharing until the post says `visibility: public`; diagrams are hotlinked from the blog. See [docs/maintenance.md](docs/maintenance.md#qiita-sync) for recovery and unpublishing.

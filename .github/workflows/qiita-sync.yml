@@ -1,9 +1,16 @@
-# Manual-only sync of opted-in Japanese posts to Qiita. Dry-run by default.
+# Syncs opted-in Japanese posts to Qiita.
+#  - Automatically after every successful push-deploy of main (the image URLs must already be live), or
+#  - by hand via Run workflow, where Dry run is ticked by default.
 # Real runs use the `qiita` Environment (holds QIITA_TOKEN; add required reviewers there if you want a gate).
 # The job holding the token has read-only repo access; the job that can push never sees the token.
+# Pushes made with GITHUB_TOKEN do not trigger the deploy workflow, so committing the map cannot loop.
 name: Sync to Qiita
 
 on:
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,7 +34,7 @@ permissions: {}
 
 jobs:
   dry-run:
-    if: ${{ inputs.dry_run }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,7 +53,7 @@ jobs:
   # A real run elsewhere would commit the map to that branch and leave main's map empty, so the next
   # run on main would create a duplicate. Fail loudly instead of silently skipping.
   wrong-branch:
-    if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,7 +63,12 @@ jobs:
           exit 1
 
   apply:
-    if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
+    # Only trusted code runs with the token: a manual run on main, or a push (never a pull request) to main
+    # whose deploy succeeded, checked out at exactly the commit that was deployed.
+    if: >-
+      ${{ (github.event_name == 'workflow_dispatch' && !inputs.dry_run && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'push') }}
     runs-on: ubuntu-latest
     environment: qiita
     permissions:
@@ -66,6 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
