@@ -13,7 +13,7 @@ draft: false
 **How to read this article.** Pi Durable is young and its API moves, so claims carry labels:
 
 - <span class="label documented">Documented</span>: stated in the official announcement, the package README, or the Cloudflare docs, linked next to the claim.
-- <span class="label verified">Verified</span>: I ran it. The code is in this article and in the repository.
+- <span class="label verified">Verified</span>: I ran it. The code is in this article; I have not published a repository, so copy it from here.
 - <span class="label opinion">Opinion</span>: my interpretation.
 - <span class="label proposal">Proposal</span>: an architecture I think follows from the design. Not something the package ships.
 
@@ -30,6 +30,24 @@ What did you lose? If the only record of the run was a chat transcript, you can 
 This is the gap between **conversation history** (what was said) and **execution state** (what is in flight, what finished, what must not run twice). Simple chat tools can ignore it. Agents that run for minutes or hours, on a server, driven by more than one person, cannot.
 
 The question this article follows: *what if an agent could resume after a crash instead of starting over?* And the less comfortable follow-up: *what exactly does "resume" promise, and what does it not?*
+
+### 1.1 What "durable" does and does not mean
+
+Three layers, each needing more than the one before:
+
+1. **Conversation persistence.** Entries committed to the configured storage are still there after a restart.
+2. **Execution recovery.** On reopen, the framework finds interrupted tasks (a model request, a tool call) and applies its recovery rules: continue, resend, rerun, or report the task as interrupted.
+3. **End-to-end workflow durability.** A multi-step workflow resumes safely, but only if its storage, its tools and the external systems they call provide the guarantees it needs. The framework cannot supply those from the inside.
+
+Durable internal state does **not**, by itself, give you:
+
+- exactly-once execution of external side effects;
+- knowledge that an external operation succeeded or failed;
+- recovery from every infrastructure or storage failure (a killed process is not a power cut or a corrupted disk);
+- safe retries of non-idempotent operations;
+- consistency between an external system and the agent's internal state.
+
+Which of these you get depends on the failure mode, the storage configuration, the framework's recovery rules and how each tool is written. Sections 5 and 6 test one failure mode (the process is killed) on one storage (SQLite), and say where the test stops.
 
 ## 2. What Pi Durable is
 
@@ -68,13 +86,7 @@ The conventional loop is short:
 User request → LLM → tool call → tool result → LLM → … → final response
 ```
 
-All of its working state lives in the process: the messages array, which tool call is running, which results have come back, queued follow-ups. Persisting the *messages* is a common improvement, and it fixes a different problem than the one a crash creates.
-
-Three things are easy to confuse:
-
-- **Conversation persistence** stores the transcript. You can show it, search it, continue it with a new prompt.
-- **Execution recovery** knows that a model request was in flight and a tool call was half done, and what to do about each.
-- **Durable workflows** go further: multi-step processes with timers, waiting, and child work, all checkpointed.
+All of its working state lives in the process: the messages array, which tool call is running, which results have come back, queued follow-ups. Persisting the *messages* (layer 1 in section 1.1) is a common improvement. It lets you show, search and continue the transcript, and it fixes a different problem than the one a crash creates: knowing that a model request was in flight and a tool call was half done (layer 2). Durable workflows, the third layer, add timers, waiting and child work, all checkpointed.
 
 After a crash, a transcript-only agent has these problems:
 
@@ -169,6 +181,12 @@ Here is the scenario, with what the documentation and my run say happens at each
 6. The harness sees the unfinished tasks. Committed state is kept as is.
 7. For the interrupted tool call the **replay policy** decides: rerun it only if it is declared `replay: "safe"`, otherwise the model receives an `interrupted` error result containing the output committed so far, and the run continues from there.
 
+<div class="callout verified">
+
+<span class="label verified">Verified (source reading)</span> In 1.3.0's `dist/harness/tool.js` the recovery handler reruns a call only when the policy stored with the intent **and** the tool's current declaration both say `safe`. The README describes only the declared flag, so a tool whose flag changed between deployments is not rerun on the old intent.
+
+</div>
+
 <div class="callout documented">
 
 The announcement and README also describe the other recoverable pieces:
@@ -189,6 +207,12 @@ That classification is the heart of it:
 | In-flight tool call, default | Not rerun; the model gets an `interrupted` error and decides what to do |
 | Hook decision not yet memoized | Reruns, so store decisions with `api.memo` (first write wins) |
 
+The table says what happens to *internal* state. The next diagram adds the part storage cannot see: the same lifecycle with the two boundaries drawn.
+
+![Lifecycle of one durable task in nine steps, across three columns: agent process, storage and an external tracker. Steps 1 to 4 commit the input, a generation checkpoint, the model's tool call and the tool's intent to storage. Step 5, execute() calls the tracker and a ticket is created outside storage while no result is committed. Step 6, the process is killed; the ticket still exists and storage is unchanged. A dashed box around steps 5 and 6 marks the ambiguity window: the effect exists, no result is committed. After the restart, step 7 reopens storage and reloads state up to the intent, step 8 applies the recovery rule (replay safe reruns and may create a second ticket unless the call is keyed; the default commits an interrupted error result), and step 9 continues from the recovered state.](./images/durable-boundaries.svg)
+
+The **internal durability boundary** (blue) contains only what was committed to the configured storage. The **external side-effect boundary** (red) contains whatever the tool did to the outside world. They are two systems with no shared transaction, so a crash can land between them. In step 6 the tracker holds a ticket that storage knows nothing about: the intent says "about to call", and the missing result says "unknown", but nothing says "it happened". Recovery therefore cannot restore the truth, only apply a policy, and the policy is where the outcomes split. Section 6.5 tests both branches.
+
 ### What this does not give you
 
 <div class="callout documented">
@@ -197,7 +221,7 @@ That classification is the heart of it:
 
 </div>
 
-Consider the window in the sequence diagram: `open_ticket` called the tracker, the tracker created the ticket, and the process died before the result was committed. The harness cannot know. With the default policy it will not rerun the call, and the model is told the call "was interrupted and may have partially run". The honest options after that are the application's:
+Consider the ambiguity window in the diagram above: `open_ticket` called the tracker, the tracker created the ticket, and the process died before the result was committed. The harness cannot know. With the default policy it will not rerun the call, and the model is told the call "was interrupted and may have partially run". The honest options after that are the application's:
 
 - **Opening a pull request.** Look up an open PR for the branch before creating one. A deterministic branch name is a natural idempotency key.
 - **Sending an email.** Pass a message ID the provider deduplicates, or log "intent to send" with a key and check the provider before retrying.
@@ -225,6 +249,8 @@ npm install -D typescript @types/node
 ```
 
 Node 22.19 or newer is declared by the package. I ran Node 26, which runs `.ts` files directly (type stripping), so the demo needs no build step. For a real model you would replace the faux provider with one such as `openaiProvider()` from `@earendil-works/pi-ai/providers/openai`, which reads `OPENAI_API_KEY` ([README, Quick Start](https://github.com/joyanes97/pi-coding-agent/blob/main/packages/durable/README.md)). Storage is initialized by opening a SQLite file; it is created on first use.
+
+The example is seven files under `src/`: `agent.ts`, `worker.ts` and `demo.ts` (sections 6.2 to 6.4), then `tracker.ts`, `agent-tracker.ts`, `worker-tracker.ts` and `demo-tracker.ts` (section 6.5). All of them are listed in full below, since there is no repository to link.
 
 ### 6.2 Tools, model and harness
 
@@ -301,6 +327,8 @@ export async function openHarness(dbFile: string, ledgerFile: string, crash: boo
 	return { harness, root };
 }
 ```
+
+**Production-relevant:** `defineTool` with its `replay` flag, `createRegistry` and `defineExtension`, `Harness.open` with a persistent storage, and `root.submit` with a `requestId`. **Test-only scaffolding:** the ledger file, the `process.kill` inside the tool, and the faux provider with its scripted responses.
 
 What the options do: `Harness.open(storage, { models, registry }, context)` opens one storage and binds the model registry and your extensions. `harness.root()` returns the root conversation, creating it on first use with the given agent choices. Every async call takes a Chord `Context` that carries cancellation; `BACKGROUND_CONTEXT` never cancels, and cancelling a wait only cancels the wait, never the work.
 
@@ -386,25 +414,212 @@ OK
 
 <div class="callout verified">
 
-<span class="label verified">Verified</span> `tsc --strict` passes on all three files, and the demo's assertions held in my run.
+<span class="label verified">Verified</span> `tsc --strict` passes on all seven example files, and the assertions of both demos held in my runs.
 
 </div>
 
-### 6.5 What this proves and what it does not
+### 6.5 Second scenario: the effect lands, the result does not
 
-It shows, on the tested version and for this scenario:
+The first demo's ledger only counts attempts. This one replaces it with a mock tracker that keeps real tickets in a file outside the agent's storage, so both sides of the boundary can be inspected after the crash. It runs the same crash three times, changing only how `open_ticket` is declared:
+
+- **default:** no `replay` flag.
+- **safe, no key:** `replay: "safe"`, tracker call without an idempotency key.
+- **safe, keyed:** `replay: "safe"`, tracker call with the key `ticket:<title>`.
+
+`src/tracker.ts` is the external system. It is test-only scaffolding; the deduplication on `key` stands in for what a real provider's idempotency key does.
+
+```ts
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+
+export type Ticket = { id: string; title: string; key?: string };
+
+const read = (file: string): Ticket[] => (existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : []);
+
+export function listTickets(file: string): Ticket[] {
+	return read(file);
+}
+
+// With an idempotency key the tracker deduplicates, like a real provider would. Without one it cannot.
+export function createTicket(file: string, title: string, key?: string): Ticket {
+	const tickets = read(file);
+	const existing = key === undefined ? undefined : tickets.find((t) => t.key === key);
+	if (existing) return existing;
+	const ticket: Ticket = { id: `TICKET-${tickets.length + 1}`, title, key };
+	writeFileSync(file, JSON.stringify([...tickets, ticket]));
+	return ticket;
+}
+```
+
+`src/agent-tracker.ts` holds the tool. The two lines that matter are marked: the external effect, then the crash before the result can be committed.
+
+```ts
+import { Type } from "@earendil-works/pi-ai";
+import { createModels } from "@earendil-works/pi-ai/models";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
+import { createRegistry, defineExtension, defineTool, Harness } from "@earendil-works/pi-durable";
+import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
+import { context } from "./agent.ts";
+import { createTicket } from "./tracker.ts";
+
+export type Policy = "default" | "safe-naive" | "safe-keyed";
+
+export async function openHarness(dbFile: string, trackerFile: string, policy: Policy, crash: boolean) {
+	const openTicket = defineTool({
+		name: "open_ticket",
+		description: "Open a ticket in the issue tracker",
+		parameters: Type.Object({ title: Type.String() }),
+		...(policy === "default" ? {} : { replay: "safe" as const }),
+		execute: async (args) => {
+			const key = policy === "safe-keyed" ? `ticket:${args.title}` : undefined;
+			const ticket = createTicket(trackerFile, args.title, key); // 1. the external effect happens
+			if (crash) process.kill(process.pid, "SIGKILL"); // 2. the process dies before the result is committed
+			return { output: [{ type: "text", text: `Opened ${ticket.id}` }] };
+		},
+	});
+	const registry = createRegistry();
+	registry.install(defineExtension({ name: "tracker", tools: [openTicket] }));
+
+	const faux = fauxProvider();
+	faux.setResponses(
+		Array.from({ length: 10 }, () => (ctx) => {
+			const last = ctx.messages[ctx.messages.length - 1];
+			if (last.role === "toolResult") {
+				return fauxAssistantMessage([fauxText(last.isError ? "The ticket call was interrupted." : "Ticket opened.")]);
+			}
+			return fauxAssistantMessage([fauxToolCall("open_ticket", { title: "NPE in OrderService" }, { id: "t1" })], {
+				stopReason: "toolUse",
+			});
+		}),
+	);
+	const models = createModels();
+	models.setProvider(faux.provider);
+	const harness = await Harness.open(await openNodeSqliteStorage(dbFile), { models, registry }, context);
+	const root = await harness.root(context, { agent: { model: { provider: "faux", modelId: "faux-1" } } });
+	return { harness, root };
+}
+```
+
+`src/worker-tracker.ts` is `worker.ts` with the policy as an extra argument:
+
+```ts
+import { context } from "./agent.ts";
+import { openHarness, type Policy } from "./agent-tracker.ts";
+
+const [dbFile, trackerFile, policy, mode] = process.argv.slice(2);
+const { harness, root } = await openHarness(dbFile, trackerFile, policy as Policy, mode === "crash");
+const submission = await root.submit({ type: "input", content: "Open a ticket for the NPE.", requestId: "ticket-1" }, context);
+harness.resume();
+const settled = await submission.wait(context);
+console.log(JSON.stringify({ status: settled.status }));
+await harness.close(context);
+```
+
+`src/demo-tracker.ts` runs each variant in two real processes (crash, then recover), reads the tracker and the transcript, and asserts on both:
+
+```ts
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { ToolResultMessage } from "@earendil-works/pi-ai";
+import { ToolResultEntry } from "@earendil-works/pi-durable";
+import { context } from "./agent.ts";
+import { openHarness, type Policy } from "./agent-tracker.ts";
+import { listTickets } from "./tracker.ts";
+
+// Crash after the tracker created the ticket but before the tool result is committed; restart; inspect both sides.
+async function scenario(policy: Policy) {
+	const dir = await mkdtemp(join(tmpdir(), "pi-durable-tracker-"));
+	const db = join(dir, "agent.sqlite");
+	const tracker = join(dir, "tracker.json");
+	const run = (mode: string) => spawnSync(process.execPath, ["src/worker-tracker.ts", db, tracker, policy, mode], { encoding: "utf8" });
+
+	const first = run("crash");
+	assert.equal(first.signal, "SIGKILL");
+	const afterCrash = listTickets(tracker).length;
+
+	const second = run("normal"); // the recovery process runs the same tool with crash disabled
+	assert.equal(second.status, 0, second.stderr);
+	assert.equal(JSON.parse(second.stdout).status, "done");
+
+	const { harness, root } = await openHarness(db, tracker, policy, false);
+	const page = await root.entries({}, 50, undefined, context);
+	const result = [...page.items].reverse().filter(ToolResultEntry.is).map((e) => e.model![0] as ToolResultMessage)[0];
+	await harness.close(context);
+	return { afterCrash, tickets: listTickets(tracker), result };
+}
+
+const out: Record<string, Awaited<ReturnType<typeof scenario>>> = {};
+for (const policy of ["default", "safe-naive", "safe-keyed"] as const) {
+	out[policy] = await scenario(policy);
+	const o = out[policy];
+	console.log(policy, "| tickets in tracker after crash:", o.afterCrash, "| after recovery:", o.tickets.length, "| tool result isError:", o.result.isError, JSON.stringify(o.result.content));
+}
+
+// A. Default policy: the ticket exists externally, the harness does not rerun, and its record says "interrupted", not "created".
+assert.equal(out.default.afterCrash, 1);
+assert.equal(out.default.tickets.length, 1, "default policy must not rerun the tool");
+assert.equal(out.default.result.isError, true);
+assert.ok(!JSON.stringify(out.default.result.content).includes("TICKET-1"), "internal state never learned the ticket id");
+
+// B. replay: "safe" without a key: the tool reruns and the tracker holds a duplicate.
+assert.equal(out["safe-naive"].tickets.length, 2, "safe replay with no idempotency key duplicates the effect");
+assert.equal(out["safe-naive"].result.isError, false);
+
+// C. replay: "safe" with a key: the tool reruns, the tracker deduplicates, and the committed result carries the id.
+assert.equal(out["safe-keyed"].tickets.length, 1);
+assert.equal(out["safe-keyed"].result.isError, false);
+assert.ok(JSON.stringify(out["safe-keyed"].result.content).includes("TICKET-1"));
+console.log("OK");
+```
+
+Run it with `node src/demo-tracker.ts`. Output from my run:
+
+```text
+default | tickets in tracker after crash: 1 | after recovery: 1 | tool result isError: true [{"type":"text","text":"<harness>\n[error] Tool open_ticket was interrupted and may have partially run\n</harness>"}]
+safe-naive | tickets in tracker after crash: 1 | after recovery: 2 | tool result isError: false [{"type":"text","text":"Opened TICKET-2"}]
+safe-keyed | tickets in tracker after crash: 1 | after recovery: 1 | tool result isError: false [{"type":"text","text":"Opened TICKET-1"}]
+OK
+```
+
+| Declaration | Tickets after the crash | Tickets after recovery | Committed tool result |
+|---|---|---|---|
+| default | 1 | 1 | `interrupted` error |
+| `replay: "safe"`, no key | 1 | **2** | `Opened TICKET-2` |
+| `replay: "safe"`, keyed | 1 | 1 | `Opened TICKET-1` |
+
+<div class="callout verified">
+
+<span class="label verified">Verified</span> On 1.3.0, with a mock tracker: the first ticket exists after every crash; the default policy does not rerun the tool and commits an `interrupted` error that never mentions the ticket; a replay-safe tool is rerun, and without a key the tracker ends up with a duplicate. Storage and tracker disagree in the first row (a ticket exists, the transcript does not say so) and in the second (the transcript names `TICKET-2`, and `TICKET-1` is orphaned).
+
+</div>
+
+What to take from it:
+
+- **Neither default nor safe recovers the truth.** The default reports the ambiguity honestly and leaves reconciliation to the application. `replay: "safe"` resolves it by guessing that rerunning is harmless, which is only true when the effect is idempotent.
+- **The keyed row is the tool author's work.** It is one ticket because the tool sent a key and the service deduplicated on it. Nothing in Pi Durable did that, and the README says as much: a replay-safe tool with external effects still needs its own idempotency.
+- <span class="label proposal">Proposal</span> For the default row, a reconciliation step belongs in the application: before retrying, look the ticket up by its key in the tracker. I did not implement or test that here.
+
+### 6.6 What this proves and what it does not
+
+Together, the two demos show, on the tested version and for these scenarios:
 
 - Committed state survives `SIGKILL`: the `search_logs` result and the transcript are intact after reopen.
 - The completed read-only tool ran once, not twice.
-- The in-flight non-replay-safe tool was not rerun. The side effect happened exactly once in the ledger, and the model was told the call was interrupted.
+- The in-flight non-replay-safe tool was not rerun. The ledger shows a single start of `open_ticket`, and the model was told the call was interrupted. That says nothing about whether the ticket exists; section 6.5 adds a tracker that does.
 - The run reached `done` in the second process.
+- With a tracker whose state survives the crash, the default policy leaves the ticket existing externally while the committed transcript records only `interrupted`; `replay: "safe"` reruns the tool and duplicates the ticket unless the tracker deduplicates on a key (section 6.5).
 
 It does **not** show:
 
-- That the outcome of `open_ticket` is known. It is not. The ledger says the call started; whether the ticket exists is a question for the tracker.
+- That the harness knows the outcome of `open_ticket`. It does not: after the default-policy recovery, storage holds an `interrupted` error and nothing else, and only the tracker knows whether the ticket exists.
+- Exactly-once behavior of any kind. The keyed variant produces one ticket because *my mock tracker deduplicates*; that is a property of the tool and the service, not of Pi Durable.
+- Integration with a real tracker. The mock is a JSON file. Timeouts, partial responses, and a tracker that is itself briefly unavailable are not simulated.
 - Behavior under power loss. SQLite in WAL mode with `synchronous = NORMAL` may lose the newest commit on power failure ([README](https://github.com/joyanes97/pi-coding-agent/blob/main/packages/durable/README.md)); `SIGKILL` of the process is a gentler failure.
 - Real model behavior. The faux provider is scripted. A real model may react to the interrupted result by retrying the call, asking a human, or giving up. I did not test that.
-- The `replay: "safe"` rerun path for a tool that is interrupted. In my demo the safe tool finished before the crash. The README documents the rerun; I did not exercise it.
+- A resent model request. The announcement documents it; I killed the process inside a tool, never mid-generation.
+- Crashes at other points. Every test kills the process inside `execute()`, after the intent commit. A crash between the tool's return and the result commit has the same shape but I did not inject it separately.
 - Concurrency, multiple clients, compaction, or Cloudflare hosting.
 
 ## 7. Beyond a single conversation

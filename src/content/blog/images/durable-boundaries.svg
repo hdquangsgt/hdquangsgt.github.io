@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="620" viewBox="0 0 760 620" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.2; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.5; }
+    .store { fill: #eaf1fb; stroke: #1f5fae; stroke-width: 1.5; }
+    .bad { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.5; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .halo { paint-order: stroke; stroke: #ffffff; stroke-width: 5px; }
+    .h { font-weight: 700; }
+    .s { font-size: 11.5px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+    .redline { stroke: #a33f1c; stroke-width: 1.6; fill: none; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    .win { fill: none; stroke: #a33f1c; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .pstore { fill: #eaf1fb; opacity: .55; }
+    .pext { fill: #fcefea; opacity: .6; }
+    .num { fill: #1d1f22; }
+    @media (prefers-color-scheme: dark) {
+      .pstore { fill: #14233a; opacity: .8; }
+      .pext { fill: #301c15; opacity: .8; }
+      .win { stroke: #f3a184; }
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .store { fill: #14233a; stroke: #8db8f0; }
+      .bad { fill: #301c15; stroke: #f3a184; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .halo { stroke: #121416; }
+      .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+    }
+  </style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker></defs>
+<rect class="bg" width="760" height="620"/>
+<rect class="pstore" x="296" y="22" width="208" height="588" rx="8"/>
+<rect class="pext" x="548" y="22" width="204" height="588" rx="8"/>
+<text class="t h" x="24" y="16">Agent process</text>
+<text class="t h" x="400" y="16" text-anchor="middle">Storage</text>
+<text class="t h" x="650" y="16" text-anchor="middle">External tracker</text>
+<circle cx="32" cy="68" r="11" class="box"/><text class="t s h" x="32" y="72" text-anchor="middle">1</text>
+<text class="t" x="52" y="72">Task submitted</text>
+<rect class="store" x="308" y="51" width="184" height="34" rx="6"/><text class="t s" x="400" y="72" text-anchor="middle">commit: input + task</text>
+<path class="line" d="M250 68 H306" marker-end="url(#a)"/>
+<circle cx="32" cy="116" r="11" class="box"/><text class="t s h" x="32" y="120" text-anchor="middle">2</text>
+<text class="t" x="52" y="120">Generation task starts</text>
+<rect class="store" x="308" y="99" width="184" height="34" rx="6"/><text class="t s" x="400" y="120" text-anchor="middle">checkpoint: generation</text>
+<path class="line" d="M250 116 H306" marker-end="url(#a)"/>
+<circle cx="32" cy="164" r="11" class="box"/><text class="t s h" x="32" y="168" text-anchor="middle">3</text>
+<text class="t" x="52" y="162">Model replies with a</text>
+<text class="t" x="52" y="176">tool call</text>
+<rect class="store" x="308" y="147" width="184" height="34" rx="6"/><text class="t s" x="400" y="168" text-anchor="middle">commit: pi.assistant</text>
+<path class="line" d="M250 164 H306" marker-end="url(#a)"/>
+<circle cx="32" cy="214" r="11" class="box"/><text class="t s h" x="32" y="218" text-anchor="middle">4</text>
+<text class="t" x="52" y="212">Tool task: intent saved,</text>
+<text class="t" x="52" y="226">then execute() starts</text>
+<rect class="store" x="308" y="197" width="184" height="34" rx="6"/><text class="t s" x="400" y="218" text-anchor="middle">commit: intent + replay policy</text>
+<path class="line" d="M250 214 H306" marker-end="url(#a)"/>
+<circle cx="32" cy="284" r="11" class="box"/><text class="t s h" x="32" y="288" text-anchor="middle">5</text>
+<text class="t" x="52" y="282">execute() calls the</text>
+<text class="t" x="52" y="296">tracker</text>
+<path class="line" d="M250 278 H560" marker-end="url(#a)"/>
+<rect class="bad" x="560" y="267" width="180" height="34" rx="6"/><text class="t s" x="650" y="288" text-anchor="middle">ticket created</text>
+<rect class="box" x="308" y="271" width="184" height="30" rx="6" stroke-dasharray="4 3" fill="none"/><text class="m s" x="400" y="290" text-anchor="middle">no result committed yet</text>
+<circle cx="32" cy="344" r="11" class="box"/><text class="t s h" x="32" y="348" text-anchor="middle">6</text>
+<text class="t" x="52" y="342">Process killed</text>
+<text class="t" x="52" y="356">(SIGKILL, OOM, deploy)</text>
+<path class="redline" d="M268 344 H752"/>
+<text class="t s h" x="400" y="336" text-anchor="middle" fill="#a33f1c">✕ crash</text>
+<text class="m s" x="650" y="338" text-anchor="middle">ticket still exists</text>
+<text class="m s" x="400" y="360" text-anchor="middle">storage unchanged</text>
+<rect class="win" x="292" y="250" width="464" height="122" rx="8"/>
+<text class="t s h" x="24" y="386" fill="#a33f1c">Ambiguity window: the effect exists, no result is committed.</text>
+<path class="dash" d="M24 402 H752"/><text class="m s halo" x="388" y="406" text-anchor="middle">restart</text>
+<circle cx="32" cy="436" r="11" class="box"/><text class="t s h" x="32" y="440" text-anchor="middle">7</text>
+<text class="t" x="52" y="434">New process reopens</text>
+<text class="t" x="52" y="448">storage, calls resume()</text>
+<rect class="store" x="308" y="419" width="184" height="34" rx="6"/><text class="t s" x="400" y="440" text-anchor="middle">reload state up to intent</text>
+<path class="line" d="M250 436 H306" marker-end="url(#a)"/>
+<circle cx="32" cy="506" r="11" class="box"/><text class="t s h" x="32" y="510" text-anchor="middle">8</text>
+<text class="t" x="52" y="504">Recovery rule for the</text>
+<text class="t" x="52" y="518">unfinished tool task</text>
+<rect class="store" x="308" y="472" width="184" height="68" rx="6"/><text class="t s" x="400" y="492" text-anchor="middle">replay "safe": rerun</text><text class="t s" x="400" y="507" text-anchor="middle">default: commit an</text><text class="t s" x="400" y="522" text-anchor="middle">"interrupted" error result</text>
+<path class="line" d="M250 506 H306" marker-end="url(#a)"/>
+<text class="m s" x="650" y="500" text-anchor="middle">rerun: second ticket,</text><text class="m s" x="650" y="514" text-anchor="middle">unless the call is keyed</text>
+<circle cx="32" cy="584" r="11" class="box"/><text class="t s h" x="32" y="588" text-anchor="middle">9</text>
+<text class="t" x="52" y="582">Workflow continues</text>
+<text class="t" x="52" y="596">from recovered state</text>
+<rect class="store" x="308" y="567" width="184" height="34" rx="6"/><text class="t s" x="400" y="588" text-anchor="middle">model sees the result</text>
+<path class="line" d="M250 584 H306" marker-end="url(#a)"/>
+<text class="t s h" x="400" y="38" text-anchor="middle" fill="#1f5fae">internal durability boundary</text>
+<text class="t s h" x="650" y="38" text-anchor="middle" fill="#a33f1c">external side-effect boundary</text>
+</svg>
