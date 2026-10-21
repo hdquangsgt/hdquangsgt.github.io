@@ -1,12 +1,20 @@
 ---
-title: 'Pi Agent: Sự đánh đổi giữa tự do và tiện lợi'
-description: 'Pi trao cho bạn một lõi agent nhỏ và một API extension, phần còn lại để bạn tự lo. Các thí nghiệm của tôi với extension, sub-agent và sandbox cho thấy sự tự do ấy đáng giá đến đâu, và công việc kỹ thuật, vận hành mà nó trả lại cho bạn.'
+title: 'Pi Agent: Tự do và tiện lợi — Hiểu kiến trúc'
+description: 'Bài 1/2. Pi trao cho bạn một lõi agent nhỏ và một API extension. Bài này nói về triết lý thiết kế, vòng lặp agent, gọi công cụ, quản lý ngữ cảnh, và cái giá của sự linh hoạt so với một coding agent tích hợp.'
 pubDate: 2026-10-19T09:00:00+07:00
+updatedDate: 2026-10-21T00:00:00+07:00
 category: AI Agents
 tags: [pi, coding-agents, security, architecture, claude-code]
 featured: false
 draft: false
 ---
+
+<div class="callout">
+
+**Bài 1/2.** Bài này giải thích kiến trúc của Pi và những gì thiết kế đó cho phép. [Bài 2: Từ linh hoạt đến trách nhiệm](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) nói về những gì bạn phải xây và bảo trì để sự linh hoạt ấy trở nên đáng tin cậy và an toàn.
+
+</div>
+
 
 <div class="callout">
 
@@ -31,9 +39,11 @@ draft: false
 
 Sự tương phản đó nói về chỗ công việc nằm ở đâu, không nói về chất lượng. Ở một sản phẩm tích hợp, nhiều năng lực hỗ trợ đã có sẵn khi bạn mở nó ra. Với Pi, tôi có thể tự thay đổi hoặc tự xây những mảnh đó, và tôi bắt đầu làm vậy.
 
-Bài này đi theo một lập luận. **Pi cho lập trình viên nhiều tự do hơn để định hình hệ thống quanh một model, và sự tự do đó chuyển trách nhiệm sang họ.** Sự tiện lợi không biến mất. Nó trở thành thứ bạn phải xây, tích hợp, kiểm thử và bảo trì. Tôi sẽ đi từ kiến trúc và hệ thống công cụ của nó, qua các thí nghiệm của mình, đến chuyện gì xảy ra khi việc thực thi thất bại, ranh giới phân quyền, vấn đề workflow và Code Mode, rồi hỏi liệu một bộ công cụ lớn hơn có sửa được điều gì trong số đó không, và kết bằng việc tôi nghĩ sự đánh đổi này thực chất là gì.
+Bài này đi theo một lập luận. **Pi cho lập trình viên nhiều tự do hơn để định hình hệ thống quanh một model, và sự tự do đó chuyển trách nhiệm sang họ.** Sự tiện lợi không biến mất. Nó trở thành thứ bạn phải xây, tích hợp, kiểm thử và bảo trì. Đây là Bài 1 trong hai bài. Bài này nói về kiến trúc làm nên sự tự do đó: triết lý thiết kế của Pi, vòng lặp agent, gọi công cụ và các điểm mở rộng, quản lý ngữ cảnh, Code Mode, và tất cả những thứ đó so với các coding agent tích hợp ra sao. [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) nói về cái giá thực tế của sự tự do ấy: điều phối, khôi phục, tin cậy và cô lập, và khi nào sự đánh đổi này đáng giá.
 
-## 2. Pi là gì
+Tôi viết cho những lập trình viên quan tâm đến cách coding agent vận hành bên trong, mức độ tùy biến được, và việc tùy biến đòi hỏi gì ở họ. Đây là phân tích kiến trúc và sự đánh đổi. Nó không phải benchmark, hướng dẫn cài đặt hay điểm qua tính năng.
+
+## 2. Triết lý thiết kế: nguyên liệu, không phải workflow dựng sẵn
 
 <div class="callout documented">
 
@@ -43,7 +53,21 @@ Bài này đi theo một lập luận. **Pi cho lập trình viên nhiều tự 
 
 ![Kiến trúc phân lớp của Pi. Bốn cách điều khiển (TUI tương tác, print/JSON, RPC, TypeScript SDK) nằm trên pi-coding-agent (session, file ngữ cảnh, compaction, trust, settings), lớp này nằm trên pi-agent-core (vòng lặp agent) và pi-ai (API LLM thống nhất). Extension móc vào coding agent từ bên cạnh, có thể đăng ký công cụ và lệnh hoặc chặn lời gọi công cụ. Dưới cùng, các công cụ dựng sẵn chạy dưới user hệ điều hành đã khởi động Pi, mặc định không có hàng rào đường dẫn hay hộp thoại phê duyệt.](../images/pi-architecture.svg)
 
-Bốn công cụ dựng sẵn được bật mặc định: `read`, `bash`, `edit` và `write`. Bốn công cụ dựng sẵn nữa (`grep`, `find`, `ls` và `powershell` chỉ dành cho Windows) phải bật thêm ([CLI reference](https://pi.dev/docs/latest/cli)). Phần 3 trình bày toàn bộ hệ thống công cụ. Trang chủ liệt kê những thứ Pi cố tình bỏ ra: "No sub-agents", "No plan mode", "No permission popups". Với mỗi thứ, trang này chỉ sang extension, package hoặc công cụ khác ([pi.dev](https://pi.dev)).
+Bốn công cụ dựng sẵn được bật mặc định: `read`, `bash`, `edit` và `write`. Bốn công cụ dựng sẵn nữa (`grep`, `find`, `ls` và `powershell` chỉ dành cho Windows) phải bật thêm ([CLI reference](https://pi.dev/docs/latest/cli)). Phần 4 trình bày toàn bộ hệ thống công cụ. Trang chủ liệt kê những thứ Pi cố tình bỏ ra: "No sub-agents", "No plan mode", "No permission popups". Với mỗi thứ, trang này chỉ sang extension, package hoặc công cụ khác ([pi.dev](https://pi.dev)).
+
+<div class="callout opinion">
+
+<span class="label opinion">Quan điểm</span> Những thứ bị bỏ ra cho thấy một lập trường thiết kế. Một coding agent tích hợp đi kèm một workflow: lập kế hoạch, ủy quyền và phê duyệt đã được nối sẵn với nhau. Pi đi kèm các nguyên liệu (một vòng lặp, vài công cụ, hook, một kho lưu session) và kỳ vọng bạn tự lắp workflow mình muốn. Không lập trường nào tốt hơn một cách tổng quát. Workflow dựng sẵn tiết kiệm công sức, còn nguyên liệu cho bạn quyền kiểm soát cách công việc được thực hiện.
+
+</div>
+
+<div class="callout opinion">
+
+<span class="label opinion">Quan điểm</span> Câu hỏi tiếp theo là Pi là một ứng dụng coding hoàn chỉnh hay một nền tảng agent để bạn xây lên trên. Tôi đọc nó là cái thứ hai. Các thí nghiệm của tôi, được mô tả trong [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/), là thứ đẩy tôi đến kết luận đó.
+
+</div>
+
+## 3. Vòng lặp agent
 
 Bản thân vòng lặp khá nhỏ. Pi thêm tin nhắn của bạn vào nhánh đang hoạt động, dựng một request từ system prompt, nhánh đó, các định nghĩa công cụ và cài đặt model, stream câu trả lời, chạy mọi lời gọi công cụ trong đó rồi ghi lại kết quả. Nếu kết quả đó hoặc các tin nhắn đang xếp hàng cần thêm một request nữa, một turn mới bắt đầu. Nếu không, lượt chạy kết thúc ([How Pi works](https://pi.dev/docs/latest/how-pi-works)).
 
@@ -57,9 +81,35 @@ Bản thân vòng lặp khá nhỏ. Pi thêm tin nhắn của bạn vào nhánh 
 
 <div class="callout opinion">
 
-<span class="label opinion">Quan điểm</span> Steering là mảnh "kiểm soát" đầu tiên mà mục 5 sẽ quay lại, và đó là kiểm soát dành cho một người ngồi trước bàn phím. Nó không nói gì về việc một agent cha sẽ điều hướng sub-agent ra sao. Sự tách biệt `agent_end` / `agent_settled` quan trọng vì cùng lý do với khôi phục ở mục 6: "lượt chạy đã kết thúc" và "sẽ không còn gì xảy ra nữa" là hai phát biểu khác nhau.
+<span class="label opinion">Quan điểm</span> Steering là mảnh "kiểm soát" đầu tiên mà [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) sẽ quay lại, và đó là kiểm soát dành cho một người ngồi trước bàn phím. Nó không nói gì về việc một agent cha sẽ điều hướng sub-agent ra sao. Sự tách biệt `agent_end` / `agent_settled` quan trọng vì cùng lý do với khôi phục trong Bài 2: "lượt chạy đã kết thúc" và "sẽ không còn gì xảy ra nữa" là hai phát biểu khác nhau.
 
 </div>
+
+### Năm cách điều khiển cùng một vòng lặp
+
+Vòng lặp không phụ thuộc vào terminal. Tài liệu liệt kê nhiều cách để điều khiển cùng một agent ([CLI](https://pi.dev/docs/latest/cli), [How Pi works](https://pi.dev/docs/latest/how-pi-works)):
+
+| Giao diện | Mục đích sử dụng |
+|---|---|
+| Interactive (mặc định) | Giao diện terminal cho con người. |
+| Print (`-p`) | Một prompt, văn bản cuối ra stdout, rồi thoát. |
+| JSON (`--mode json`) | Chạy một lần và ghi sự kiện agent dưới dạng JSONL. |
+| RPC (`--mode rpc`) | Process chạy lâu, được điều khiển bằng lệnh JSONL trên stdin, sự kiện ra stdout. |
+| SDK | Thư viện TypeScript tạo và điều khiển session trong cùng process. |
+
+[Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) nói về việc xây trên RPC hay SDK đòi hỏi gì ở bạn.
+
+## 4. Gọi công cụ và các điểm mở rộng
+
+Xuyên suốt bài tôi đã dùng chữ "công cụ" (tool), và phần còn lại của bài dựa vào nó. Phân quyền, khả năng quan sát, sub-agent và khôi phục lỗi, xét đến cùng đều là câu hỏi về các lời gọi công cụ. Vì vậy cần nói chính xác công cụ trong Pi là gì trước khi đi tiếp.
+
+<div class="callout documented">
+
+<span class="label documented">Tài liệu</span> Trong hướng dẫn extension của Pi, một công cụ "defines a name, model-facing description, TypeBox parameter schema, and `execute()` function" (định nghĩa một tên, mô tả hướng tới model, schema tham số TypeBox và hàm `execute()`) ([extensions guide](https://pi.dev/docs/latest/extensions)). Các công cụ dựng sẵn của Pi có cùng hình dạng: mỗi file trong [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) định nghĩa một mô tả, một schema TypeBox và phần cài đặt. Model không bao giờ chạm vào hệ thống file của bạn. Nó phát ra một yêu cầu có cấu trúc, còn code của Pi mới là thứ làm việc.
+
+</div>
+
+### Bốn tầng tùy biến
 
 Tài liệu tách bạch các cơ chế tùy biến, và sự khác biệt này quan trọng cho mọi phần bên dưới ([How Pi works](https://pi.dev/docs/latest/how-pi-works)):
 
@@ -70,34 +120,18 @@ Tài liệu tách bạch các cơ chế tùy biến, và sự khác biệt này 
 | Extension | Module TypeScript nạp vào process Pi. Chúng đăng ký công cụ, lệnh, nhà cung cấp, bộ xử lý sự kiện và giao diện. | Bằng code. Chúng có thể chặn lời gọi công cụ, và chạy với quyền hệ điều hành của process. |
 | Package | Cách phân phối extension, skill, template và theme qua npm hoặc git | Giống nội dung bên trong. |
 
-Trang chủ nói MCP nay đã được tích hợp sẵn, cùng với Codemode (phần 10).
+Trang chủ nói MCP nay đã được tích hợp sẵn, cùng với Codemode (phần 6).
 
 Các lớp này trả lời những câu hỏi khác nhau, và chọn nhầm lớp là lỗi dễ mắc. Trước khi viết code, hãy hỏi yêu cầu thực sự là gì:
 
 - **Chỉ dẫn hoặc kiến thức dùng lại được** (repo này build thế nào, quy ước nào áp dụng): file ngữ cảnh, skill hoặc prompt template. Skill phù hợp khi một workflow "needs more context than a prompt template but does not need a new executable integration point" ([Skills](https://pi.dev/docs/latest/skills)).
 - **Hành vi lúc chạy hoặc việc thực thi công cụ** (chặn một lời gọi, thêm công cụ, đổi thứ model nhìn thấy): extension.
-- **Tích hợp với hệ thống khác:** extension, MCP, hoặc điều khiển Pi từ bên ngoài qua RPC hay SDK (phần 9).
+- **Tích hợp với hệ thống khác:** extension, MCP, hoặc điều khiển Pi từ bên ngoài qua RPC hay SDK (xem bảng giao diện ở phần 3).
 - **Phân phối và duy trì một bộ các thứ trên:** package. Package chỉ là cơ chế phân phối, và chúng "can execute extension code and can include skills that instruct the model to run programs", nên việc xem xét mã nguồn là của bạn ([Packages](https://pi.dev/docs/latest/packages)).
 
 <div class="callout opinion">
 
 <span class="label opinion">Quan điểm</span> Dùng extension trong khi một skill là đủ nghĩa là phải sở hữu đoạn TypeScript luôn phải theo kịp API của Pi. Dùng skill trong khi cần cưỡng chế nghĩa là dựa vào một model có thể phớt lờ nó. Tôi chưa mô tả trường hợp nào mình chọn sai, và sẽ không bịa ra. Ý chính là API extension mạnh đến mức việc lựa chọn này rất dễ bị bỏ qua.
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Câu hỏi tiếp theo là Pi là một ứng dụng coding hoàn chỉnh hay một nền tảng agent để bạn xây lên trên. Tôi đọc nó là cái thứ hai. Các thí nghiệm của tôi là thứ đẩy tôi đến kết luận đó.
-
-</div>
-
-## 3. Công cụ: model thực sự làm được gì
-
-Xuyên suốt bài tôi đã dùng chữ "công cụ" (tool), và phần còn lại của bài dựa vào nó. Phân quyền, khả năng quan sát, sub-agent và khôi phục lỗi, xét đến cùng đều là câu hỏi về các lời gọi công cụ. Vì vậy cần nói chính xác công cụ trong Pi là gì trước khi đi tiếp.
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> Trong hướng dẫn extension của Pi, một công cụ "defines a name, model-facing description, TypeBox parameter schema, and `execute()` function" (định nghĩa một tên, mô tả hướng tới model, schema tham số TypeBox và hàm `execute()`) ([extensions guide](https://pi.dev/docs/latest/extensions)). Các công cụ dựng sẵn của Pi có cùng hình dạng: mỗi file trong [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) định nghĩa một mô tả, một schema TypeBox và phần cài đặt. Model không bao giờ chạm vào hệ thống file của bạn. Nó phát ra một yêu cầu có cấu trúc, còn code của Pi mới là thứ làm việc.
 
 </div>
 
@@ -142,7 +176,7 @@ Hai công cụ nữa đến từ các *extension* dựng sẵn của Pi, không 
 
 | Công cụ | Trách nhiệm |
 |---|---|
-| `codemode` | Model viết JavaScript gọi các công cụ khác; chỉ output của script quay lại (phần 10) |
+| `codemode` | Model viết JavaScript gọi các công cụ khác; chỉ output của script quay lại (phần 6) |
 | `tool_search` | Tìm các công cụ chưa được khai báo với model và khai báo những cái khớp cho lần gọi tiếp theo |
 
 <div class="callout documented">
@@ -194,7 +228,7 @@ export default function (pi: ExtensionAPI) {
 
 ### Công cụ, extension, skill, MCP server, package
 
-Phần 2 phân tách các cơ chế tùy biến theo thứ chúng cưỡng chế. Ở đây là cùng sự phân tách đó, nhưng theo việc mỗi cơ chế làm gì với bề mặt công cụ của model:
+Bảng "Bốn tầng tùy biến" ở trên phân tách các cơ chế tùy biến theo thứ chúng cưỡng chế. Ở đây là cùng sự phân tách đó, nhưng theo việc mỗi cơ chế làm gì với bề mặt công cụ của model:
 
 | Cơ chế | Thêm một thao tác model gọi được? | Chạy code trong process Pi? |
 |---|---|---|
@@ -219,31 +253,25 @@ Phần 2 phân tách các cơ chế tùy biến theo thứ chúng cưỡng chế
 
 <div class="callout opinion">
 
-<span class="label opinion">Quan điểm</span> Có hai hệ quả. Thứ nhất, một công cụ tự viết là một năng lực mới cần được thiết kế: mô tả và schema tốt, output có giới hạn, lỗi trung thực và một quyết định về những gì nó được phép chạm vào. Không có gì trong Pi làm bước rà soát đó thay bạn. Thứ hai, hook `tool_call` có thể từ chối lời gọi, nhưng chính trang bảo mật của Pi đặt ranh giới thật ở hệ điều hành, không phải ở hook. Nhìn theo hướng này, các thí nghiệm của tôi ở phần 4 là những nỗ lực xây hành vi ở tầng này. Đó là một cách diễn giải. Tôi không báo cáo mỗi thí nghiệm đã dùng hook hay công cụ nào.
+<span class="label opinion">Quan điểm</span> Có hai hệ quả. Thứ nhất, một công cụ tự viết là một năng lực mới cần được thiết kế: mô tả và schema tốt, output có giới hạn, lỗi trung thực và một quyết định về những gì nó được phép chạm vào. Không có gì trong Pi làm bước rà soát đó thay bạn. Thứ hai, hook `tool_call` có thể từ chối lời gọi, nhưng chính trang bảo mật của Pi đặt ranh giới thật ở hệ điều hành, không phải ở hook. Nhìn theo hướng này, các thí nghiệm của tôi (mô tả trong [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)) là những nỗ lực xây hành vi ở tầng này. Đó là một cách diễn giải. Tôi không báo cáo mỗi thí nghiệm đã dùng hook hay công cụ nào.
 
 </div>
 
-## 4. Tự xây những mảnh còn thiếu
+### Hook của extension: nơi hành vi có thể thay đổi
 
-<div class="callout observed">
+API extension cho phép bạn thay đổi hành vi tại những điểm cụ thể trong một lượt chạy. Hình liệt kê các hook theo thứ tự chúng kích hoạt và việc mỗi hook làm được: có hook chỉ quan sát, có hook biến đổi thứ đi qua, và một vài hook có thể chặn.
 
-<span class="label observed">Quan sát</span> Tôi thử nghiệm với extension để có những năng lực mà tôi không tìm thấy ở dạng mình muốn:
+![Thứ tự các hook của extension. Một lượt chạy bắt đầu bằng input (có thể tiêu thụ hoặc biến đổi), before_agent_start (đổi các phần của prompt và công cụ) và agent_start. Mỗi turn chạy turn_start, context (biến đổi tin nhắn), before_provider_request (đổi payload), after_provider_response và các sự kiện message. Mỗi lời gọi công cụ trong một turn chạy tool_execution_start, tool_call (có thể cho phép hoặc chặn), tool_execution_update, tool_result (có thể ẩn bớt hoặc thay thế) và tool_execution_end, rồi turn kết thúc bằng turn_end. Sau các turn là agent_end, agent_before_settle (có thể yêu cầu thêm một lượt chạy) và agent_settled. Chú giải đánh dấu hook nào có thể chặn, hook nào có thể biến đổi và hook nào chỉ quan sát.](../images/extension-lifecycle.svg)
 
-- một **orchestrator**,
-- **sub-agent** để xử lý công việc có session dài hoặc nhiều ngữ cảnh,
-- các extension nhằm **hạn chế quyền**,
-- một nỗ lực chạy **Pi bên trong container Docker** làm sandbox.
+<div class="callout documented">
 
-Những thử nghiệm này vấp phải khó khăn khi triển khai và gặp lỗi. Dù vậy, chúng dạy tôi nhiều hơn về cách một agent vận hành bên trong. Khó khăn tôi mô tả chính xác nhất là việc theo dõi các sub-agent đang làm gì, mà phần 5 sẽ phân tích. Tôi không liệt kê từng lỗi ở đây. Tôi cũng không báo cáo cấu hình hay kết quả của nỗ lực Docker, nên không có gì trong bài này coi nó là một phép thử bảo mật của Pi.
+<span class="label documented">Tài liệu</span> `tool_call` có thể cho phép, đổi hoặc chặn một lời gọi, và handler ném lỗi sẽ chặn nó. `tool_result` có thể ẩn bớt, chú thích hoặc thay thế kết quả. `turn_end` và `agent_before_settle` có thể thêm entry và yêu cầu tiếp tục, và tài liệu dặn phải canh giữ để tránh vòng lặp. `provider_stream_event` chỉ để thông báo và được await theo thứ tự stream, nên một handler chậm sẽ làm chậm stream. `pi.events` cho phép các extension nhắn nhau, còn `pi.appendEntry()` lưu dữ liệu vào session mà không gửi cho model. Thư mục ví dụ có `debug-provider.ts`, một công cụ xem tùy chọn các sự kiện stream thô của provider. ([extensions guide](https://pi.dev/docs/latest/extensions))
 
 </div>
 
-Trình tự quan trọng hơn bất kỳ lỗi riêng lẻ nào. Động cơ cho các sub-agent là những session dài và ngữ cảnh lớn. Tôi không tìm thấy thứ mình muốn ở dạng mình muốn, nên tôi thử tự xây. Ngoài công sức bỏ ra, thứ nó để lại cho tôi là những câu hỏi về việc ủy quyền: orchestrator chịu trách nhiệm điều gì, kết quả và lỗi của một sub-agent đi đâu, và ai nhìn thấy chúng. Phần còn lại của bài đi theo những câu hỏi đó. Đó là cách tôi đọc thí nghiệm của chính mình. Nó là một diễn giải về những gì xảy ra khi tôi tự xây các mảnh này, không phải một khẳng định rằng Pi nói chung thiếu năng lực ủy quyền.
+Các hook này sẽ quay lại trong [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/), nơi câu hỏi là ai dựng góc nhìn về việc agent đang làm gì và chuyện gì xảy ra khi nó thất bại.
 
-Những gì tài liệu thiết lập sẵn là một chuyện riêng, và kiểm tra được. Pi gọi "no sub-agents" là một lựa chọn. Hướng dẫn extension của nó cũng không nhắc đến sub-agent, dù cho phép extension chạy các công cụ khác bằng `ctx.executeTool()`, và những lời gọi lồng nhau này đi qua cùng các handler `tool_call` như lời gọi do model phát ra ([hướng dẫn extension](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)). Vậy nên orchestrator không phải thứ bạn cấu hình. Nó là thứ bạn thiết kế.
-
-### Ngữ cảnh không chỉ là một cửa sổ
-
+## 5. Quản lý ngữ cảnh: không chỉ là một cửa sổ
 
 Trước hết là cái gì lấp đầy cửa sổ. System prompt gồm các chỉ dẫn nền của Pi cộng với các context file nó tìm thấy. Định nghĩa công cụ được gửi kèm mỗi request, và nhánh đang hoạt động được chuyển thành các tin nhắn user, assistant và tool-result. Skill được nạp dần: chỉ tên, mô tả và đường dẫn của mỗi skill vào system prompt, còn toàn bộ `SKILL.md` chỉ được đọc khi model quyết định một tác vụ khớp với mô tả. Skill có `disable-model-invocation: true` chỉ dùng được qua lệnh tường minh `/skill:name`. Tin nhắn của bạn có thể mang tham chiếu file bằng `@`, ảnh dán vào và đầu ra của `!command` (`!!command` chạy lệnh mà không gửi đầu ra cho model), và extension có thể thêm chỉ dẫn hoặc biến đổi ngữ cảnh trước khi request rời đi ([How Pi works](https://pi.dev/docs/latest/how-pi-works), [Skills](https://pi.dev/docs/latest/skills), [Usage](https://pi.dev/docs/latest/usage), [extensions guide](https://pi.dev/docs/latest/extensions)).
 
@@ -254,7 +282,7 @@ Trước hết là cái gì lấp đầy cửa sổ. System prompt gồm các ch
 <span class="label opinion">Quan điểm</span> Có hai hệ quả. Mô tả của một skill là tín hiệu định tuyến của nó, nên mô tả mơ hồ sẽ định tuyến kém, điều trang Skills cũng nói. Và vì các mô tả luôn nằm trong prompt, một bộ sưu tập skill lớn có chi phí thường trực ở mọi request. Tôi chưa đo chi phí đó, nên coi nó là một cân nhắc thiết kế chứ không phải một con số.
 
 </div>
-Ngữ cảnh dài là lý do tôi muốn có sub-agent, nên cần nói chính xác các cơ chế của Pi làm gì. Ba thứ dễ bị lẫn vào nhau:
+Ngữ cảnh dài là lý do tôi muốn có sub-agent (câu chuyện nằm trong [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)), nên cần nói chính xác các cơ chế của Pi làm gì. Ba thứ dễ bị lẫn vào nhau:
 
 <div class="callout documented">
 
@@ -276,7 +304,7 @@ Ngữ cảnh dài là lý do tôi muốn có sub-agent, nên cần nói chính x
 
 <div class="callout opinion">
 
-<span class="label opinion">Quan điểm</span> Vậy quản lý ngữ cảnh không chỉ là nhét được nhiều hơn vào một cửa sổ. Nó còn là chọn lịch sử nào agent mang theo và agent đi theo hướng nào tiếp. Nhưng không có gì ở đây được chứng minh là tự nó giải quyết được tình trạng cạn kiệt ngữ cảnh. Compaction có thể thất bại (tài liệu nói hãy sửa lỗi phía nhà cung cấp rồi chạy lại `/compact`), bản tóm tắt vốn mất thông tin, và bản ghi trên đĩa không tự quay lại ngữ cảnh của model. Rẽ nhánh giúp con người lái, nhưng không làm một tác vụ dài tự tiếp tục. Tôi chưa thử các tính năng này hoạt động ra sao trong các thí nghiệm orchestrator của mình, nên không thể nói liệu chúng có loại bỏ nhu cầu về sub-agent hay không.
+<span class="label opinion">Quan điểm</span> Vậy quản lý ngữ cảnh không chỉ là nhét được nhiều hơn vào một cửa sổ. Nó còn là chọn lịch sử nào agent mang theo và agent đi theo hướng nào tiếp. Nhưng không có gì ở đây được chứng minh là tự nó giải quyết được tình trạng cạn kiệt ngữ cảnh. Compaction có thể thất bại (tài liệu nói hãy sửa lỗi phía nhà cung cấp rồi chạy lại `/compact`), bản tóm tắt vốn mất thông tin, và bản ghi trên đĩa không tự quay lại ngữ cảnh của model. Rẽ nhánh giúp con người lái, nhưng không làm một tác vụ dài tự tiếp tục. Tôi chưa thử các tính năng này hoạt động ra sao trong các thí nghiệm orchestrator của mình (xem [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)), nên không thể nói liệu chúng có loại bỏ nhu cầu về sub-agent hay không.
 
 </div>
 
@@ -286,227 +314,7 @@ Ngữ cảnh dài là lý do tôi muốn có sub-agent, nên cần nói chính x
 
 </div>
 
-## 5. Khi việc ủy quyền trở nên khó nhìn thấy
-
-<div class="callout observed">
-
-<span class="label observed">Quan sát</span> Trong lúc thử nghiệm với sub-agent, tôi thấy rất khó theo dõi chúng đang làm gì. Agent chính có thể liên tục báo rằng công việc đang diễn ra, trong khi tôi gần như không có hoặc không có cái nhìn rõ ràng về việc sub-agent thực sự đang làm gì.
-
-</div>
-
-Quan sát này nói về một khoảng trống: giữa tín hiệu tiến độ chung chung và khả năng kiểm tra việc thực thi thực sự. Dựng cái thứ nhất thì dễ và dễ bỏ qua cái thứ hai. Tôi không khẳng định extension của mình có hay thiếu cơ chế cụ thể nào. Điểm bên dưới là thứ một hệ thống ủy quyền cần có, nếu bạn muốn tin nó.
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Khởi chạy một sub-agent mới chỉ là điều phối. Hiểu được nó cần nhiều hơn:
-
-- **Trạng thái so với tiến độ.** "Running" cho biết một tác vụ tồn tại. Nó không cho biết tác vụ đang đọc file, đang chờ model hay đang kẹt.
-- **Sự kiện thực thi.** Các lời gọi công cụ và kết quả trung gian của agent con, không chỉ câu trả lời cuối.
-- **Truy vết xuyên các cấp.** Cách nối hành động của agent con với request cha đã gây ra chúng.
-- **Xử lý lỗi.** Timeout, tác vụ bị treo, và một đường báo lỗi đến được agent cha dưới dạng khác với sự im lặng.
-
-</div>
-
-Các khối xây dựng của Pi bao phủ một phần. Session được lưu dưới dạng cây JSONL ghi lại tin nhắn, lời gọi công cụ và kết quả, cùng các lần compaction, còn chế độ JSON và RPC stream các sự kiện agent ([How Pi works](https://pi.dev/docs/latest/how-pi-works)). API extension bổ sung các hook chi tiết hơn. Sự kiện vòng đời gồm `agent_start`, `turn_start`, `message_update` và `agent_settled`, còn việc thực thi công cụ có `tool_execution_start`, `tool_execution_update` (tiến độ trong một lời gọi) và `tool_execution_end`. Với các lời gọi lồng nhau qua `ctx.executeTool()`, những sự kiện này mang theo `parentToolCallId` ([hướng dẫn extension](https://pi.dev/docs/latest/extensions)). SDK cung cấp `session.subscribe()` cho sự kiện của một session chạy trong cùng process ([SDK](https://pi.dev/docs/latest/sdk)). Đây là các khối xây dựng, và tôi chưa kiểm chứng chúng hoạt động thế nào giữa các process Pi con riêng biệt. Tài liệu tôi đọc không mô tả dashboard, metrics hay hệ thống tracing nào ngoài những thứ này. Việc một process con có xuất hiện hữu ích trong bản ghi đó hay không phụ thuộc vào cách bạn khởi chạy nó. Đó là một quyết định thiết kế thuộc về bạn.
-
-Extension API là nơi các khối xây dựng đó trở nên cụ thể. Hình liệt kê các hook theo thứ tự chúng chạy và điều mỗi loại handler được phép làm: có loại chỉ quan sát, có loại biến đổi thứ đi qua, và một số có thể chặn.
-
-![Thứ tự các hook của extension. Một lượt chạy bắt đầu bằng input (có thể tiêu thụ hoặc biến đổi), before_agent_start (đổi các phần của prompt và công cụ) và agent_start. Mỗi turn chạy turn_start, context (biến đổi tin nhắn), before_provider_request (đổi payload), after_provider_response và các sự kiện message. Mỗi lời gọi công cụ trong một turn chạy tool_execution_start, tool_call (có thể cho phép hoặc chặn), tool_execution_update, tool_result (có thể ẩn bớt hoặc thay thế) và tool_execution_end, rồi turn kết thúc bằng turn_end. Sau các turn là agent_end, agent_before_settle (có thể yêu cầu thêm một lượt chạy) và agent_settled. Chú giải đánh dấu hook nào có thể chặn, hook nào có thể biến đổi và hook nào chỉ quan sát.](../images/extension-lifecycle.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> `tool_call` có thể cho phép, đổi hoặc chặn một lời gọi, và handler ném lỗi sẽ chặn nó. `tool_result` có thể ẩn bớt, chú thích hoặc thay thế kết quả. `turn_end` và `agent_before_settle` có thể thêm entry và yêu cầu tiếp tục, và tài liệu dặn phải canh giữ để tránh vòng lặp. `provider_stream_event` chỉ để thông báo và được await theo thứ tự stream, nên một handler chậm sẽ làm chậm stream. `pi.events` cho phép các extension nhắn nhau, còn `pi.appendEntry()` lưu dữ liệu vào session mà không gửi cho model. Thư mục ví dụ có `debug-provider.ts`, một công cụ xem tùy chọn các sự kiện stream thô của provider. ([extensions guide](https://pi.dev/docs/latest/extensions))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Đây là chỗ hỗ trợ cụ thể nhất tôi tìm được cho lập luận của mục này. Các đường nối để theo dõi một agent đã có, xuống tới từng lời gọi công cụ và sự kiện provider. Thứ tài liệu không mô tả là một giao diện hoàn chỉnh dựng từ chúng. Nên câu hỏi không phải Pi có quan sát được hay không. Câu hỏi là ai dựng giao diện đó.
-
-</div>
-
-Gộp lại, có ba thuộc tính riêng biệt, và một agent có thể có cái đầu tiên mà thiếu các cái còn lại:
-
-- **Thực thi:** nó có thể thực hiện hành động.
-- **Khả năng quan sát:** bạn biết nó đang làm gì và đang ở đâu.
-- **Kiểm soát:** bạn có thể can thiệp, đổi cách làm hoặc dừng nó.
-
-Ủy quyền mà thiếu khả năng quan sát tạo ra một hệ thống có thể hành động mà không dễ hiểu được. Đó là kết luận về thiết kế, không phải khẳng định rằng mọi hệ thống đa agent đều như vậy.
-
-Kiểm soát cũng có một mặt được ghi trong tài liệu. Một người có thể steer, xếp follow-up hoặc abort (mục 2), và một chương trình có thể làm như vậy qua RPC. Những thứ đó tác động lên một session Pi. Một agent cha sẽ áp dụng chúng cho agent con ra sao, khi nào nên làm, và agent con xử lý chúng thế nào là những quyết định tôi sẽ phải tự thiết kế. Tôi không khẳng định Pi không làm được.
-
-## 6. Khi việc thực thi dừng lại
-
-<div class="callout observed">
-
-<span class="label observed">Quan sát</span> Trong lúc dùng bình thường, tôi gặp những lỗi bất ngờ: lỗi phản hồi của model, dùng công cụ sai, và cạn kiệt context window. Trong một số trường hợp, việc thực thi dừng mà không tự phục hồi theo cách cho phép tác vụ tiếp tục. Tôi phải can thiệp, chẩn đoán vấn đề, điều chỉnh trạng thái thực thi hoặc cách làm của mình, và tìm cách để chạy tiếp. Một số lỗi tôi xử lý được theo cách đó, và tác vụ tiếp tục sau một gián đoạn nhỏ. Những lỗi khác khiến tác vụ không thể tiến triển.
-
-</div>
-
-Như vậy có hai nhóm, và sự khác biệt giữa chúng chính là phần hữu ích: **các gián đoạn tôi phục hồi được** bằng cách chẩn đoán rồi chạy tiếp, và **các lỗi chặn đứng tác vụ**. Tôi không xếp từng lỗi cụ thể (lỗi phản hồi, dùng sai công cụ, cạn kiệt ngữ cảnh) vào nhóm nào, và tôi cũng không nói lỗi nào trong số đó là không thể phục hồi nói chung. Một lỗi có tự tiếp tục được hay không phụ thuộc vào model, nhà cung cấp, cấu hình và các extension, và phần kể của tôi không gán cái nào cho cái nào.
-
-Đây là vấn đề khác với phần 5. Khả năng quan sát hỏi bạn có thấy được agent đang làm gì không. Khả năng phục hồi hỏi chuyện gì xảy ra khi việc nó đang làm bị hỏng. Khả năng **thực thi** một tác vụ của agent và khả năng **phục hồi** khi việc thực thi thất bại là hai thuộc tính riêng. Một hệ thống có thể rất giỏi cái đầu mà không nói gì về cái sau.
-
-Tôi không nên nói quá những gì Pi thiếu, vì nó có hành vi phục hồi, và tài liệu mô tả chúng:
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> Pi có cơ chế retry tự động ở cấp agent cho "transient failures", bật mặc định, với mặc định 3 lần thử và exponential backoff bắt đầu từ 2 giây, tối đa 60 giây ([Settings](https://pi.dev/docs/latest/settings)). Nó cũng có compaction tự động, khởi động khi ngữ cảnh trống còn dưới mức dự trữ (mặc định 16.384 token). Khi nhà cung cấp trả lỗi tràn hoặc quá dài ngữ cảnh, Pi chạy một lần compaction phục hồi rồi bắt đầu lần thử lại như một lượt chạy mới. Nếu compaction phục hồi đó thất bại hoặc bị hủy, Pi "schedules no internal retry" ([Compaction](https://pi.dev/docs/latest/compaction)). Khi bản thân một công cụ thất bại, lỗi trở thành một kết quả lỗi trả về cho model ([hướng dẫn extension](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)).
-
-</div>
-
-Vậy phát biểu chính xác không phải là Pi không bao giờ phục hồi. Một số lỗi có đường xử lý tích hợp sẵn, và một số đường đó có giới hạn: ba lần retry theo mặc định, và một đường phục hồi bằng compaction kết thúc mà không thử lại nếu bản thân compaction thất bại. Tài liệu tôi đọc không liệt kê lỗi nào được tính là transient. Chúng cũng không mô tả cách xử lý tích hợp cho một model cứ dùng sai một công cụ, hoặc cho một lần chạy kết thúc ở trạng thái bạn muốn tiếp tục. Tôi không biết liệu lỗi nào của mình nằm trong hay ngoài các đường tích hợp sẵn. Tôi không khẳng định chúng là khoảng trống của Pi. Có thể đó là những trường hợp mặc định đã cạn hoặc không áp dụng.
-
-Hình vẽ các đường đó và điều xảy ra khi từng đường cạn. Ô nét liền là hành vi có trong tài liệu. Hàng nét đứt đánh dấu một khoảng trống trong những gì tôi đã đọc, không phải một khẳng định về Pi.
-
-![Các đường khôi phục theo ba cột: tác nhân, phản ứng có sẵn, và điều xảy ra khi phản ứng đó cạn. Lỗi tạm thời của provider kích hoạt agent-level retry (bật mặc định, 3 lần thử, backoff từ 2 giây, trần 60 giây); khi hết lần thử thì lỗi thuộc về bạn xử lý. Tràn ngữ cảnh hoặc dừng sớm do độ dài kích hoạt recovery compaction và một lần thử lại như một lượt chạy mới; nếu compaction thất bại hoặc bị hủy thì không có retry nội bộ. Ngữ cảnh trống dưới mức dự trữ 16.384 token kích hoạt auto-compaction, và bản tóm tắt bị mất chi tiết. Một lời gọi công cụ lỗi trả về error result cho model, và việc nó có đổi cách làm hay không do model quyết định. Hàng cuối nét đứt, lạm dụng công cụ lặp lại hoặc một lượt chạy kẹt ở trạng thái xấu, không có gì được mô tả trong tài liệu tôi đã đọc, và kết thúc ở việc bạn kiểm tra, điều chỉnh rồi chạy tiếp.](../images/recovery-paths.svg)
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Việc một lỗi cụ thể có tự tiếp tục hay không ít quan trọng hơn câu hỏi ai quyết định "đã phục hồi" nghĩa là gì. Phục hồi đáng tin cậy thường cần các quyết định về:
-
-- **Chiến lược retry.** Retry lỗi nào, bao nhiêu lần, và khi nào ngừng retry để báo lên.
-- **Xử lý lỗi.** Một lời gọi công cụ sai trở thành tin nhắn cho model, một lần dừng, hay một yêu cầu gửi đến bạn.
-- **Quản lý ngữ cảnh.** Điều gì được tóm tắt hoặc bị bỏ khi cửa sổ đầy, và tác vụ có sống sót qua đó không. Compaction tóm tắt công việc trước đó, nên bản tóm tắt giữ lại gì sẽ định hình agent biết gì về sau.
-- **Workflow phục hồi tường minh.** Một cách được xác định để kiểm tra trạng thái đã hỏng, điều chỉnh nó và chạy tiếp, thay vì ứng biến mỗi lần.
-
-</div>
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> Các mảnh để dựng hàng cuối đó từ bên ngoài cũng có trong tài liệu. Qua RPC, một chương trình điều khiển có thể bật hoặc tắt auto-retry và auto-compaction (`set_auto_retry`, `set_auto_compaction`), hủy một lần retry đang diễn ra (`abort_retry`), compact theo yêu cầu (`compact`), và theo dõi `compaction_start`, `compaction_end` cùng các sự kiện `summarization_retry_*`. Bên trong tiến trình, `session_before_compact` có thể thay bản tóm tắt của Pi, và `session_compact_failed` được kích hoạt khi compaction thất bại hoặc bị hủy. ([RPC](https://pi.dev/docs/latest/rpc), [Compaction](https://pi.dev/docs/latest/compaction))
-
-</div>
-
-<div class="callout proposal">
-
-<span class="label proposal">Đề xuất</span> Một supervisor nhỏ chạy trên RPC: để retry có sẵn chạy, theo dõi các sự kiện compaction và retry, và khi một lượt chạy dừng ở trạng thái lỗi thì áp dụng chính sách do tôi viết, như compact với chỉ dẫn tường minh, đổi model, hoặc trả tác vụ lại cho tôi. Tôi chưa xây hay thử nó.
-
-</div>
-
-Pi cho bạn một phần những thứ này, và cây session của nó, vốn giữ nguyên các mục gốc ngay cả sau compaction, là một bản ghi hữu ích để tiếp tục từ đó ([How Pi works](https://pi.dev/docs/latest/how-pi-works)). Tôi chưa tìm các package bổ sung retry hay compaction an toàn hơn, nên không thể nói chúng có tồn tại hay hoạt động tốt đến đâu. Ở một sản phẩm tích hợp, nhiều quyết định trong số này có thể đã được đưa sẵn cho bạn. Với Pi, mặc định chỉ là điểm xuất phát, và phần còn lại là của bạn để thiết kế, kiểm thử và bảo trì. Đó là cùng một sự đánh đổi như trước, nhìn từ trường hợp thất bại: tự do tùy biến một agent không đi kèm đảm bảo rằng nó phục hồi một cách trơn tru.
-
-## 7. Ranh giới phân quyền thực sự
-
-Các extension hạn chế quyền và nỗ lực dùng Docker ở phần 4 đặt ra câu hỏi cái gì thực sự giới hạn một agent. Một prompt, một công cụ bị hạn chế và một container là những thứ khác nhau, nên tách chúng ra sẽ có ích.
-
-Vòng lặp dưới đây mang tính khái niệm, không phải sơ đồ cấu trúc nội bộ của Pi:
-
-> context → model → tool request → runtime → execution environment → tool result → updated context
-
-Năm lớp đều có thể được gọi là "permission":
-
-1. **Quyền của process.** Những gì user hệ điều hành chạy agent làm được. Mọi thứ trong process đều bị chặn trên bởi đây.
-2. **Kiểm tra ở tầng ứng dụng.** Các quy tắc trong agent xem xét một lời gọi công cụ rồi cho phép, hỏi lại hoặc từ chối.
-3. **Ranh giới thư mục project.** Thư mục làm việc là một hàng rào hay chỉ là điểm xuất phát.
-4. **Năng lực của công cụ.** Một `read` có cấu trúc có thể bị rào theo đường dẫn. Một shell có thể chạy bất kỳ chương trình nào, và chương trình đó có thể mở bất kỳ file nào.
-5. **Cách ly.** Container, VM và sandbox hệ điều hành giới hạn chính process, kể cả các process con.
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> [Trang bảo mật](https://pi.dev/docs/latest/security) của Pi nói Pi "can read, change, and execute files with the permissions of the account that started it" và "does not ask for approval before every tool call". Thư mục làm việc điều khiển việc khám phá tài nguyên và vị trí mặc định của công cụ, nhưng không giới hạn các lệnh chạm tới đường dẫn khác. Xem transcript, tin cậy một project và xem lại thay đổi đều không phải ranh giới bảo mật. Lựa chọn được khuyến nghị là chạy toàn bộ Pi bên trong container, VM hoặc sandbox, với credential hẹp, ngắn hạn và mạng bị hạn chế khi có thể.
-
-</div>
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> Trong mã nguồn, [`read.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/read.ts) chấp nhận đường dẫn tương đối hoặc tuyệt đối và chỉ kiểm tra file có đọc được không. Các hàm phụ trợ đường dẫn mà nó gọi ([`path-utils.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/path-utils.ts) và [`utils/paths.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/utils/paths.ts)) giữ nguyên đường dẫn tuyệt đối và nối đường dẫn tương đối vào thư mục làm việc. Cả hai đều không so sánh kết quả với thư mục làm việc. Tôi đã đọc mã này trên nhánh main, có phiên bản package là 1.3.0, nhưng tôi chưa chạy các công cụ của Pi, và chưa lần theo mọi cách một file có thể được đọc. Đừng coi đây là kết quả đã được kiểm thử.
-
-</div>
-
-Điều đó khớp với tài liệu: mặc định không có hàng rào ở tầng ứng dụng. Nhưng việc không có hộp thoại không chứng minh quyền truy cập không giới hạn trong mọi cấu hình. Một extension có thể thêm kiểm tra. Sự kiện `tool_call` có thể sửa hoặc chặn một lời gọi, và một handler ném lỗi sẽ chặn nó theo kiểu fail-closed ([hướng dẫn extension](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)). Một hộp thoại cũng không chứng minh bảo mật toàn diện. Tài liệu của Claude Code nói quy tắc deny của Read và Edit áp dụng cho các công cụ file tích hợp, cho các lệnh file mà nó nhận ra trong Bash như `cat`, và cho đích của redirection. Chúng không áp dụng cho một lệnh đọc file mà không nêu tên chúng, như `grep -r pattern .`, hay cho một script tự mở file. Để có cưỡng chế ở mức hệ điều hành, tài liệu chỉ đến sandbox của nó, và nói chế độ `bypassPermissions` chỉ nên dùng trong môi trường cách ly như container hoặc VM ([permissions](https://code.claude.com/docs/en/permissions)). Vậy tài liệu của cả hai đều chỉ đến sự cách ly cho ranh giới thật. Chúng khác nhau ở mặc định giữa bạn và ranh giới đó. Ở Manual mode của Claude Code (giá trị cấu hình `default`), nó hỏi trước hầu hết hành động chỉnh sửa file, chạy lệnh shell hoặc truy cập mạng ([permission modes](https://code.claude.com/docs/en/permission-modes)). Một tập lệnh chỉ đọc tích hợp như `cat` và `ls` chạy không cần hỏi, kể cả với đường dẫn ngoài thư mục làm việc, trừ khi `permissions.blockReadsOutsideWorkingDirectories` được bật. Tài liệu cũng nói từ v2.1.283, auto mode là chế độ khởi đầu cho các session tương tác trong terminal và VS Code, với một classifier xem xét hành động thay bạn. Pi không hỏi gì cả. Tôi so sánh tài liệu, không so sánh hành vi: tôi chưa chạy Claude Code cho bài này.
-
-![Ba cấu hình so theo đường đi của một lời gọi công cụ. Pi mặc định: không có kiểm tra tầng ứng dụng và không có sandbox hệ điều hành, nên lời gọi chạm tới mọi thứ user hệ điều hành truy cập được. Pi được gia cố (một đề xuất): extension của bạn chặn hoặc xác nhận lời gọi, container hoặc VM chỉ mount project, nên lời gọi chạm tới project đã mount và credential phạm vi hẹp. Claude Code ở Manual mode: quy tắc phân quyền và chế độ hỏi khi chỉnh sửa, chạy lệnh shell và truy cập mạng, còn các lệnh chỉ đọc như cat chạy không cần hỏi. Có tùy chọn sandbox, và lời gọi chạm tới quyền truy cập của user hệ điều hành sau khi lọc qua các lần phê duyệt.](../images/permission-layers.svg)
-
-Hai chi tiết riêng của Pi dễ bị bỏ sót:
-
-- **Project trust không phải sandbox.** Nó kiểm soát những gì một thư mục cung cấp: settings và MCP server của project, extension, skill, prompt template và theme dưới `.pi`, file system prompt, và các package được cấu hình theo project. Nó "prevents a folder from silently loading executable extensions before you approve it", và trang bảo mật nói nó "does not limit what tool calls can access or affect". Extension chạy "inside the Pi process with the same operating-system permissions", nên một extension đã được tin cậy có thể đọc prompt, lời gọi công cụ, file và lịch sử session ([hướng dẫn extension](https://pi.dev/docs/latest/extensions)). File ngữ cảnh (`AGENTS.md`, `CLAUDE.md`) được nạp mà không cần trust ([Configuration](https://pi.dev/docs/latest/configuration)). Chỉ dẫn trong một repository bạn đã clone có thể đến được model dù bạn có tin cậy nó hay không. Việc một model cụ thể có làm theo một chỉ dẫn độc hại hay không là câu hỏi khác mà tôi chưa thử.
-
-- **Docker là một công cụ, không phải một đảm bảo.** Container thực sự cách ly cái gì phụ thuộc vào việc bạn mount gì, truyền credential nào vào, mạng có mở không, và nó chạy dưới user nào. Một container mount thư mục home của bạn cùng một API key phạm vi rộng chỉ dời vấn đề đi chỗ khác, không giải quyết nó. Đây là bảo mật container nói chung, không phải kết quả từ nỗ lực của tôi ([Docker security](https://docs.docker.com/engine/security/)).
-
-Tóm lại, ba câu hỏi hay bị trộn lẫn. **Trust** hỏi tài nguyên riêng của một thư mục có được nạp hay không. **Permissions** hỏi process đang chạy và các công cụ của nó về mặt kỹ thuật làm được gì. **Isolation** hỏi điều gì vẫn nằm ngoài tầm với ngay cả khi một agent hoặc extension hành xử sai. Tài liệu của Pi cung cấp cái thứ nhất, mô tả cái thứ hai, và để cái thứ ba cho bạn. Tôi chưa kiểm toán bảo mật của Pi ngoài việc đọc các trang này và mã nguồn của một công cụ.
-
-### Hướng dẫn container hóa của Pi cung cấp gì
-
-Chỉ nói "tự mang container đến" thì là lời khuyên mỏng, và tài liệu đi xa hơn thế. [Hướng dẫn containerization](https://pi.dev/docs/latest/containerization) mô tả bốn lựa chọn, và chúng khác nhau ở thứ nằm trong ranh giới:
-
-![Hai phạm vi cô lập. Cô lập toàn bộ tiến trình (Docker, Docker Sandboxes, OpenShell): ranh giới container hoặc sandbox bao lấy tiến trình Pi, gồm cả extension và công cụ của extension, cùng các công cụ dựng sẵn và các lệnh bắt đầu bằng dấu chấm than; máy chủ chỉ bị chạm tới qua những gì bạn mount hoặc truyền vào. Cô lập chỉ công cụ (extension Gondolin): tiến trình Pi và extension của nó vẫn ở máy chủ, và chỉ các công cụ dựng sẵn cùng lệnh bắt đầu bằng dấu chấm than chạy trong một micro-VM Linux cục bộ. Cả hai đều phụ thuộc vào việc bạn mount gì, truyền credential nào vào, và mạng có mở hay không.](../images/isolation-scope.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> **Plain Docker** chạy toàn bộ tiến trình Pi trong container (Dockerfile của hướng dẫn dựa trên `node:24-bookworm-slim`), mount thư mục làm việc ở `/workspace`, truyền key bằng `-e`, và giữ cài đặt cùng session trong một named volume. **Docker Sandboxes** chạy Pi trong một sandbox được quản lý, nơi credential thật nằm lại trên máy chủ và một proxy thay thế nó cho các request tới host đã cấu hình. **OpenShell** chạy Pi trong sandbox cục bộ hoặc từ xa với các policy về filesystem, process, network, credential và inference. Sandbox từ xa không bind-mount thư mục của bạn, nên bạn phải chuyển file một cách tường minh. **Gondolin** là một extension chạy Pi trên máy chủ nhưng chuyển các công cụ dựng sẵn và lệnh `!` vào một micro-VM Linux cục bộ. Các công cụ extension khác vẫn chạy trên máy chủ trừ khi chúng ủy quyền. Hướng dẫn cảnh báo đừng mount `~/.pi/agent` (credential, cài đặt, extension, session) trừ khi chủ ý cho phép truy cập đó, lưu ý rằng biến môi trường truyền vào container thì nhìn thấy được bên trong, và nói rằng lệnh của Gondolin thừa hưởng môi trường của máy chủ, nên key đặt trong biến môi trường có thể hiện ra trong VM. Nó cũng dặn xem lại ví dụ Gondolin trước khi thêm các công cụ có thể vượt qua ranh giới VM. ([Containerization](https://pi.dev/docs/latest/containerization))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Điều này làm câu chuyện phân quyền trở nên cụ thể, và làm lựa chọn sắc nét hơn. Cô lập toàn bộ tiến trình cũng nhốt luôn các extension tôi nạp, điều quan trọng vì các thử nghiệm của tôi chính là extension. Cô lập chỉ công cụ rào các công cụ dựng sẵn nhưng để code extension của tôi, và mọi công cụ nó đăng ký, ở lại máy chủ. Không cách nào sai, vì chúng trả lời những câu hỏi khác nhau. Công việc là có thật ở cả hai: chọn một cách, mount hẹp, giới hạn credential, và giữ cho thiết lập hoạt động khi Pi và extension của bạn thay đổi. Vì thế đề xuất bên dưới nghiêng về cô lập toàn bộ tiến trình.
-
-</div>
-
-<div class="callout proposal">
-
-<span class="label proposal">Đề xuất</span> Nếu dùng Pi cho công việc thật, tôi sẽ bắt đầu với container, lựa chọn mà tài liệu nêu là mạnh nhất, chỉ mount project, và truyền một key phạm vi hẹp. Tôi sẽ thêm một extension `tool_call` để có khả năng quan sát và bắt lỗi, không phải để làm bức tường. Tôi chưa thử cấu hình này.
-
-</div>
-
-## 8. Từ agent đến workflow
-
-Khi tôi xem xét việc dùng Pi trong các project vốn đã dùng phát triển có AI hỗ trợ, một vấn đề khác xuất hiện. Năng lực không phải workflow. Một agent có năng lực không biết project build thế nào, theo quy ước nào, test nào phải pass, hay khi nào công việc được coi là xong.
-
-Phần còn lại của mục này là phân tích chi phí để đưa một agent vào một project. Đó là suy luận chung, không phải báo cáo về điều gì đã đi sai trong một project cụ thể của tôi.
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> **Năng lực cho biết agent làm được gì. Workflow cho biết công việc tiến hành thế nào, dưới những ràng buộc nào, và việc hoàn thành được kiểm tra ra sao.** Việc đưa một agent vào project sẵn có đặt ra những câu hỏi như:
-
-- **Ngữ cảnh.** Quy tắc của project nằm ở đâu? Pi nạp `AGENTS.md` và `CLAUDE.md` làm file ngữ cảnh, nên chỉ dẫn sẵn có có thể được mang sang. Chỉ dẫn vẫn không phải cưỡng chế.
-- **Công cụ.** Các script sẵn có chạy được qua `bash`. Rẻ, nhưng model phải học chúng từ README hoặc `--help`.
-- **Điều phối.** Nếu các quy trình có AI hỗ trợ khác cũng chạm vào cùng repository, ai quyết định cái gì chạy khi nào?
-- **Kiểm chứng.** Ai đảm bảo test và review thực sự được chạy? Chỉ dẫn chỉ mang tính tham khảo. Extension hoặc một harness bên ngoài (RPC, chế độ JSON, SDK) là nơi có thể cưỡng chế kiểm tra.
-- **Bàn giao.** Agent báo là đã xong bằng cách nào, và người hay quy trình tiếp theo biết bằng cách nào?
-
-</div>
-
-Đây là chỗ các phần trước gặp nhau. Khả năng quan sát, khả năng phục hồi và ranh giới phân quyền về bản chất đều là câu hỏi về workflow: hệ thống làm gì, có ai nhìn thấy được không, và cái gì ràng buộc nó. Một sản phẩm tích hợp đã quyết định nhiều điều trong số đó rồi. Với Pi, bạn tự quyết.
-
-## 9. Không có WebUI tích hợp không có nghĩa là không có lựa chọn tích hợp
-
-Pi không có giao diện web tích hợp, điều tôi cảm thấy là một khoảng trống. Nhưng thiếu UI và thiếu giao diện lập trình là hai chuyện khác nhau. Tài liệu liệt kê nhiều cách để điều khiển cùng một agent ([CLI](https://pi.dev/docs/latest/cli), [How Pi works](https://pi.dev/docs/latest/how-pi-works)):
-
-| Giao diện | Mục đích sử dụng |
-|---|---|
-| Interactive (mặc định) | Giao diện terminal cho con người. |
-| Print (`-p`) | Một prompt, văn bản cuối ra stdout, rồi thoát. |
-| JSON (`--mode json`) | Chạy một lần và ghi sự kiện agent dưới dạng JSONL. |
-| RPC (`--mode rpc`) | Process chạy lâu, được điều khiển bằng lệnh JSONL trên stdin, sự kiện ra stdout. |
-| SDK | Thư viện TypeScript tạo và điều khiển session trong cùng process. |
-
-Vậy một front end web không bị chặn. Bạn có thể xây một cái trên RPC hoặc SDK. Thứ các giao diện này không làm là công việc xung quanh chúng: dựng UI, xử lý output dạng stream, giữ trạng thái session, quyết định chuyện gì xảy ra khi có lỗi (phần 6), và quản lý vòng đời của agent. Trang SDK còn nêu một điểm tinh tế bạn sẽ phải xử lý: `agent_end` đánh dấu kết thúc một lần chạy, còn `agent_settled` báo hiệu Pi sẽ không tự tiếp tục. Tôi chưa xây front end nào như vậy, nên đây là mô tả bề mặt đã được tài liệu hóa, không phải trải nghiệm của tôi.
-
-Chi tiết là nơi công việc ẩn mình ([RPC](https://pi.dev/docs/latest/rpc)). Hình cho thấy hình dạng của một prompt qua giao diện RPC, và phần mà một client ngây thơ làm sai.
-
-![Vòng đời của một prompt RPC giữa client và pi --mode rpc. Client gửi prompt kèm id. Pi trả lời bằng một response mang cùng id và success true, nghĩa là prompt đã được nhận, xếp hàng hoặc xử lý, chưa phải đã xong. Sau đó Pi stream các sự kiện message_update, rồi agent_end khi một lượt chạy kết thúc, có thể có thêm sự kiện compaction và retry cùng một lượt chạy khác, và cuối cùng là agent_settled, nghĩa là Pi sẽ không tự tiếp tục.](../images/rpc-lifecycle.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Tài liệu</span> Mỗi bản ghi là một đối tượng JSON kết thúc bằng LF, và client chỉ nên tách theo LF: tài liệu cảnh báo `readline` của Node.js cũng tách theo U+2028 và U+2029, vốn có thể xuất hiện bên trong chuỗi JSON. Stdout chỉ mang bản ghi giao thức, còn thông tin chẩn đoán đi vào stderr. Lệnh nhận một `id` tùy chọn mà response lặp lại, và các response có thể đến không theo thứ tự. Một response `prompt` thành công nghĩa là prompt đã được nhận, xếp hàng hoặc xử lý, không phải công việc đã xong. Nếu `data.disposition` là `"handled"`, không có lượt chạy nào bắt đầu và `agent_settled` sẽ không theo sau. Client nên subscribe trước khi gửi prompt, và đóng stdin là yêu cầu thoát có trật tự. Bộ lệnh bao gồm session (`fork`, `clone`, `get_tree`, `export_html`), model (`set_model`, `set_thinking_level`) và `compact`, nên một front end có thể cung cấp phần lớn những gì TUI làm. Hộp thoại và thông báo của extension được chuyển tiếp qua RPC, nhưng custom component thì không. ([RPC](https://pi.dev/docs/latest/rpc), [extensions guide](https://pi.dev/docs/latest/extensions))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Một client coi response đầu tiên là hoàn tất, hoặc đọc dòng bằng một bộ đọc tổng quát, có thể chạy tốt trong bản demo rồi hành xử sai về sau. Không điều nào trong số này khó, nhưng đó đúng là loại chi tiết mà việc thiếu WebUI giao cho bạn.
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Việc thiếu WebUI là một phiên bản thu nhỏ của toàn bộ sự đánh đổi. Trải nghiệm làm sẵn không có, một trải nghiệm tự làm là khả thi, nhưng ai xây thì người đó sở hữu. Tôi không khẳng định việc bỏ qua này là một lựa chọn mang tính triết lý. Tài liệu tôi đọc không nói.
-
-</div>
-
-## 10. Code Mode: một hướng thiết kế tôi chưa thử
+## 6. Code Mode: một hướng thiết kế tôi chưa thử
 
 Tôi tìm thấy Code Mode của Pi trong tài liệu. Tôi **chưa dùng nó cho tác vụ thật nào**, nên phần này mô tả thiết kế đã được tài liệu hóa và không nói gì về kết quả.
 
@@ -532,13 +340,14 @@ Tôi tìm thấy Code Mode của Pi trong tài liệu. Tôi **chưa dùng nó ch
 
 <div class="callout opinion">
 
-<span class="label opinion">Quan điểm</span> Code Mode và điều phối đa agent giải quyết các vấn đề khác nhau. Code Mode kết hợp các **lời gọi công cụ** trong một lượt của một agent, nên kết quả trung gian không tốn ngữ cảnh hay lượt đi về. Điều phối chia **công việc** cho nhiều agent, mỗi agent có tương tác model riêng. Code Mode không thay thế orchestrator tôi đã cố xây, và tôi không thể nói nó sẽ giúp được. Điều tôi thấy thú vị là sandbox ở đây tường minh: tầm với của script đúng bằng các công cụ nó được trao. Sự đánh đổi từ phần 5 vẫn áp dụng. Một script gom nhiều lời gọi vào một output thì hiệu quả, và cũng là nơi hoạt động trung gian bị giấu khỏi model.
+<span class="label opinion">Quan điểm</span> Code Mode và điều phối đa agent giải quyết các vấn đề khác nhau. Code Mode kết hợp các **lời gọi công cụ** trong một lượt của một agent, nên kết quả trung gian không tốn ngữ cảnh hay lượt đi về. Điều phối chia **công việc** cho nhiều agent, mỗi agent có tương tác model riêng. Code Mode không thay thế orchestrator tôi đã cố xây, và tôi không thể nói nó sẽ giúp được. Điều tôi thấy thú vị là sandbox ở đây tường minh: tầm với của script đúng bằng các công cụ nó được trao. Sự đánh đổi về khả năng quan sát ở [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) vẫn áp dụng. Một script gom nhiều lời gọi vào một output thì hiệu quả, và cũng là nơi hoạt động trung gian bị giấu khỏi model.
 
 </div>
 
 Tôi muốn thử nó trên một tác vụ thật trước khi đánh giá. Cho đến lúc đó, nó vẫn chỉ là một giả thuyết.
 
-## 11. Nhiều công cụ hơn, agent có tốt hơn?
+
+## 7. Linh hoạt so với tích hợp: nhiều công cụ hơn, agent có tốt hơn?
 
 Phản ứng đầu tiên của tôi trước môi trường mỏng của Pi (phần 1) là đếm những gì còn thiếu. Hệ thống công cụ khiến phản ứng đó đáng được xem xét lại, vì rất dễ biến "ít công cụ dựng sẵn" thành "kém năng lực hơn". Tôi không nghĩ số lượng công cụ quyết định được điều gì, và phần so sánh dưới đây nhằm cho thấy vì sao.
 
@@ -568,7 +377,7 @@ Phản ứng đầu tiên của tôi trước môi trường mỏng của Pi (ph
 
 <div class="callout documented">
 
-<span class="label documented">Tài liệu</span> Tác giả của Pi đã nêu lý do cho bộ công cụ nhỏ: tháng 11/2025 Mario Zechner viết rằng "these four tools are all you need for an effective coding agent", rằng system prompt và định nghĩa công cụ của Pi "come in below 1000 tokens", và rằng các MCP server phổ biến "dump their entire tool descriptions into your context on every session" (đổ toàn bộ mô tả công cụ vào ngữ cảnh của bạn ở mỗi session). Ông mô tả định nghĩa công cụ của Codex là "similarly minimal to pi's" và Claude Code là "a spaceship with 80% of functionality I have no use for" ([bài viết](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)). Đó là ý kiến của tác giả, trong một bài cũng nói Pi sẽ không hỗ trợ MCP. Pi từ đó đã đổi hướng về MCP (phần 10), và tôi chưa kiểm chứng con số 1.000 token với phiên bản hiện tại.
+<span class="label documented">Tài liệu</span> Tác giả của Pi đã nêu lý do cho bộ công cụ nhỏ: tháng 11/2025 Mario Zechner viết rằng "these four tools are all you need for an effective coding agent", rằng system prompt và định nghĩa công cụ của Pi "come in below 1000 tokens", và rằng các MCP server phổ biến "dump their entire tool descriptions into your context on every session" (đổ toàn bộ mô tả công cụ vào ngữ cảnh của bạn ở mỗi session). Ông mô tả định nghĩa công cụ của Codex là "similarly minimal to pi's" và Claude Code là "a spaceship with 80% of functionality I have no use for" ([bài viết](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)). Đó là ý kiến của tác giả, trong một bài cũng nói Pi sẽ không hỗ trợ MCP. Pi từ đó đã đổi hướng về MCP (phần 6), và tôi chưa kiểm chứng con số 1.000 token với phiên bản hiện tại.
 
 </div>
 
@@ -582,7 +391,7 @@ Tuyên bố của tôi hẹp hơn "ít hơn thì tốt hơn". **Một bộ công
 
 **2. Chọn công cụ và suy luận.** <span class="label opinion">Quan điểm</span> Trực giác là mỗi công cụ thêm vào là một lựa chọn nữa model phải cân nhắc, có thể làm việc chọn kém dự đoán được hơn. Tôi chưa đo điều đó, và cả tài liệu Pi lẫn Claude Code tôi đọc đều không đưa ra khẳng định về độ chính xác khi chọn công cụ, nên tôi coi nó là một giả thuyết. Điều tài liệu cho thấy là cả hai sản phẩm đều xây cơ chế để không khai báo mọi thứ ngay từ đầu (hình trên), gợi ý rằng các tác giả coi trọng chi phí của một tập khai báo lớn. Đó là suy luận về ý định, không phải lý do được nêu ra.
 
-**3. Khả năng mở rộng so với sự đầy đủ dựng sẵn.** <span class="label opinion">Quan điểm</span> Một lõi tối giản đặt ra ít giả định hơn và dễ đọc từ đầu đến cuối hơn. Cái giá tương ứng chính là điều cả bài này nói đến: bất cứ thứ gì lõi bỏ ra, ai đó phải xây, kiểm thử và bảo trì. API extension của Pi rộng rãi, nhưng một công cụ tự viết là code bạn sở hữu, viết trên một API đã từng thay đổi (phần 12 nhắc tới việc đổi tên package). Một harness tích hợp đã làm việc đó một lần, cho tất cả mọi người.
+**3. Khả năng mở rộng so với sự đầy đủ dựng sẵn.** <span class="label opinion">Quan điểm</span> Một lõi tối giản đặt ra ít giả định hơn và dễ đọc từ đầu đến cuối hơn. Cái giá tương ứng chính là điều cả bài này nói đến: bất cứ thứ gì lõi bỏ ra, ai đó phải xây, kiểm thử và bảo trì. API extension của Pi rộng rãi, nhưng một công cụ tự viết là code bạn sở hữu, viết trên một API đã từng thay đổi (việc đổi tên package bên dưới là một ví dụ). Một harness tích hợp đã làm việc đó một lần, cho tất cả mọi người.
 
 **4. Kiểm soát so với tiện lợi.** <span class="label opinion">Quan điểm</span> Một bộ mặc định nhỏ là nền rõ ràng để tùy biến: bạn đọc được model được cung cấp gì, đổi nó, và móc vào mọi lời gọi. Một harness được trau chuốt cho bạn thứ chạy được ngay ngày đầu. Cả hai đều là giá trị thật. Bên nào thắng tùy việc bạn có bao giờ dùng đến sự kiểm soát đó không, và tôi sẽ không trung thực nếu nói lúc nào tôi cũng dùng.
 
@@ -596,9 +405,9 @@ Tuyên bố của tôi hẹp hơn "ít hơn thì tốt hơn". **Một bộ công
 |---|---|
 | Bề mặt ngắn, dễ đọc: tám cái tên, bốn cái mặc định | Mọi thứ ngoài thao tác file và `bash` là việc bạn phải tự xây hoặc cài |
 | Bạn chọn model thấy gì (`--tools`, `exposure`) | Bạn phải biết lựa chọn đó tồn tại, và phải đưa ra nó |
-| Một điểm hook thấy mọi lời gọi, kể cả lời gọi lồng nhau | Hook là bề mặt chính sách, không phải sandbox; ranh giới là việc bạn tự dựng (phần 7) |
+| Một điểm hook thấy mọi lời gọi, kể cả lời gọi lồng nhau | Hook là bề mặt chính sách, không phải sandbox; ranh giới là việc bạn tự dựng (xem [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)) |
 | Ít giả định được nhúng sẵn, nên harness ít gây bất ngờ | Các workflow phổ biến (kế hoạch, sub-agent, phê duyệt) bắt đầu từ trang trắng |
-| Dễ nhúng qua RPC hoặc SDK | Nhúng khiến bạn là chủ của phần keo dán (phần 9) |
+| Dễ nhúng qua RPC hoặc SDK | Nhúng khiến bạn là chủ của phần keo dán (xem [Bài 2](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)) |
 
 <div class="callout opinion">
 
@@ -612,9 +421,9 @@ Tuyên bố của tôi hẹp hơn "ít hơn thì tốt hơn". **Một bộ công
 
 </div>
 
-## 12. Tự do, tiện lợi, và ai sở hữu hệ thống
+### Tự do, tiện lợi, và ai sở hữu hệ thống
 
-Các thí nghiệm này cộng lại thành gì? Khả năng mở rộng chính là điểm mấu chốt của Pi: hành vi lập trình được, một hook duy nhất nơi mọi lời gọi công cụ đều có thể bị kiểm tra hoặc từ chối, các luồng sự kiện bạn có thể xây lên trên, và một lõi đủ nhỏ để hiểu. Mỗi thứ đó đi kèm một cái giá tương ứng, và cái giá luôn giống nhau. Quyết định đã chuyển sang tôi.
+Phần so sánh này cộng lại thành gì? Khả năng mở rộng chính là điểm mấu chốt của Pi: hành vi lập trình được, một hook duy nhất nơi mọi lời gọi công cụ đều có thể bị kiểm tra hoặc từ chối, các luồng sự kiện bạn có thể xây lên trên, và một lõi đủ nhỏ để hiểu. Mỗi thứ đó đi kèm một cái giá tương ứng, và cái giá luôn giống nhau. Quyết định đã chuyển sang tôi.
 
 | Pi cho bạn gì | Pi đòi hỏi gì ở bạn |
 |---|---|
@@ -623,27 +432,17 @@ Các thí nghiệm này cộng lại thành gì? Khả năng mở rộng chính 
 | Nhìn thấy và thay đổi các quyết định kiến trúc | Đưa ra chúng cho tốt: phân quyền, cách ly, khả năng quan sát, phục hồi sau lỗi |
 | Không có chính sách đóng gói sẵn để phải chống lại | Tự cung cấp chính sách của riêng bạn, hoặc làm việc mà không có |
 
-Hệ thống công cụ là ví dụ rõ nhất. Pi cho bạn một bộ nguyên liệu nhỏ và chỗ để thêm của riêng bạn, và phần 11 lập luận rằng đó là một canh bạc chứ không phải một thiếu sót. Sản phẩm tích hợp không phải là đối lập của khả năng mở rộng. Chẳng hạn Claude Code có hook, skill, sub-agent, plugin và MCP, và Pi không phải không có tiện ích. Khác biệt là **bao nhiêu thứ được quyết định sẵn cho bạn theo mặc định, và ai bảo trì nó**.
+Hệ thống công cụ là ví dụ rõ nhất. Pi cho bạn một bộ nguyên liệu nhỏ và chỗ để thêm của riêng bạn, và phần so sánh ở trên lập luận rằng đó là một canh bạc chứ không phải một thiếu sót. Sản phẩm tích hợp không phải là đối lập của khả năng mở rộng. Chẳng hạn Claude Code có hook, skill, sub-agent, plugin và MCP, và Pi không phải không có tiện ích. Khác biệt là **bao nhiêu thứ được quyết định sẵn cho bạn theo mặc định, và ai bảo trì nó**.
 
-## 13. Khi nào nên dùng Pi?
+## 8. Kết luận: tự do là một lựa chọn thiết kế
 
-<div class="callout opinion">
+Sự linh hoạt của Pi là một lựa chọn thiết kế, và nó có giá trị khi bạn muốn kiểm soát môi trường của agent: model được thấy những công cụ nào, chuyện gì xảy ra quanh mỗi lời gọi, session được lưu và nén ra sao, agent được điều khiển từ bên ngoài thế nào. Kiến trúc trong bài này cho thấy sự kiểm soát đó là thật và được ghi trong tài liệu, tới từng hook và sự kiện. Nó cũng cho thấy không thứ nào trong số đó đi kèm một chính sách đã chọn sẵn cho bạn. Vòng lặp không quyết định khôi phục nghĩa là gì, hook không quyết định cái gì được phép, và bộ công cụ không quyết định công việc được ủy quyền ra sao.
 
-<span class="label opinion">Quan điểm</span> Hãy dùng Pi khi bạn muốn nhiều hơn một agent chạy được ngay. Hãy dùng nó khi bạn muốn hiểu agent vận hành ra sao, định hình lại workflow của nó, mở rộng năng lực của nó, và nhận trách nhiệm cho hệ thống bạn xây quanh nó. Các phần trên là hình hài của trách nhiệm đó trong các thí nghiệm của tôi: thiết kế việc ủy quyền, làm cho nó quan sát được, quyết định phục hồi nghĩa là gì khi một lần chạy thất bại, quyết định ranh giới phân quyền nằm ở đâu, và đưa agent vào workflow của một project.
+Còn lại một câu hỏi mà riêng kiến trúc không trả lời được: **cần thêm công việc kỹ thuật nào để biến sự linh hoạt đó thành một hệ thống đáng tin cậy, an toàn và bảo trì được?** [Bài 2: Pi Agent: Từ linh hoạt đến trách nhiệm — Xây workflow đáng tin cậy](/vi/blog/pi-agent-freedom-vs-convenience-part-2/) trả lời qua điều phối và khả năng quan sát, khôi phục khi việc thực thi dừng lại, sự khác nhau giữa tin cậy, phân quyền và cô lập, và một khung quyết định để chọn giữa Pi và một coding agent tích hợp.
 
-Nếu ưu tiên của bạn là hoàn thành công việc với ít thiết lập và bảo trì nhất có thể, một sản phẩm tích hợp hơn có thể là lựa chọn tốt hơn. Chọn tiện lợi thay vì kiểm soát không có gì sai, và tự xây mọi thứ cũng không có gì vốn dĩ tốt hơn.
+<div class="callout">
 
-</div>
-
-Làm việc với Pi khiến tôi ý thức hơn về một sự đánh đổi dễ bị bỏ qua: **tự do chuyển trách nhiệm.** Bạn càng kiểm soát nhiều một hệ thống, bạn càng phải đưa ra nhiều quyết định để biến sự kiểm soát đó thành một trải nghiệm làm việc đáng tin cậy. Chính tài liệu của Pi cũng nói đúng như vậy về phân quyền: nó bảo bạn tự mang container đến, và mô tả bốn cách để làm điều đó.
-
-Vậy câu hỏi không phải là Pi có tốt hơn các coding agent khác hay không. Tôi chưa thử điều đó, và bài này không khẳng định gì về nó. Câu hỏi là sự tự do Pi đem lại có đáng với phần việc thêm mà bạn sẵn sàng nhận hay không. Tôi mở đầu bằng một model mạnh trong một môi trường mỏng. Môi trường mỏng ấy chính là lời đề nghị, và công việc lấp đầy nó là cái giá.
-
-**Tự do cho bạn khả năng xây hệ thống mình muốn. Tiện lợi giúp bạn tốn ít thời gian hơn cho việc xây hệ thống ngay từ đầu.**
-
-<div class="callout opinion">
-
-<span class="label opinion">Quan điểm</span> Giờ đây tôi đánh giá một coding agent không chỉ bằng chất lượng code nó tạo ra. Tôi còn xem ranh giới phân quyền của nó nằm ở đâu, nó thất bại và phục hồi ra sao, tôi có thấy được nó đang làm gì không, và tốn bao nhiêu công để đưa nó vào workflow của một project. Đó là những câu hỏi mà các phần trên cứ quay lại.
+**Tiếp theo: Bài 2/2.** [Pi Agent: Từ linh hoạt đến trách nhiệm — Xây workflow đáng tin cậy](/vi/blog/pi-agent-freedom-vs-convenience-part-2/)
 
 </div>
 
@@ -651,8 +450,8 @@ Vậy câu hỏi không phải là Pi có tốt hơn các coding agent khác hay
 
 **Pi: tài liệu chính thức và mã nguồn**
 
-- [pi.dev](https://pi.dev), [Sessions](https://pi.dev/docs/latest/sessions), [Skills](https://pi.dev/docs/latest/skills), [Packages](https://pi.dev/docs/latest/packages), [Extensions](https://pi.dev/docs/latest/extensions), [SDK](https://pi.dev/docs/latest/sdk), [How Pi works](https://pi.dev/docs/latest/how-pi-works), [Security](https://pi.dev/docs/latest/security), [Configuration](https://pi.dev/docs/latest/configuration), [Settings](https://pi.dev/docs/latest/settings), [Compaction](https://pi.dev/docs/latest/compaction), [CLI](https://pi.dev/docs/latest/cli), [Code Mode](https://pi.dev/docs/latest/codemode), [Usage](https://pi.dev/docs/latest/usage), [RPC](https://pi.dev/docs/latest/rpc), [Containerization](https://pi.dev/docs/latest/containerization), [MCP](https://pi.dev/docs/latest/mcp), [Quickstart](https://pi.dev/docs/latest/quickstart)
-- [earendil-works/pi](https://github.com/earendil-works/pi): [`extensions.md`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md), [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) (gồm [`read.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/read.ts)), [`agent-loop.ts`](https://github.com/earendil-works/pi/blob/main/packages/agent/src/agent-loop.ts), [`types.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/extensions/types.ts), [`hello.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/hello.ts), [`tool-override.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/tool-override.ts), [`path-utils.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/path-utils.ts), [`utils/paths.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/utils/paths.ts)
+- [pi.dev](https://pi.dev), [Sessions](https://pi.dev/docs/latest/sessions), [Skills](https://pi.dev/docs/latest/skills), [Packages](https://pi.dev/docs/latest/packages), [Extensions](https://pi.dev/docs/latest/extensions), [SDK](https://pi.dev/docs/latest/sdk), [How Pi works](https://pi.dev/docs/latest/how-pi-works), [Security](https://pi.dev/docs/latest/security), [Settings](https://pi.dev/docs/latest/settings), [Compaction](https://pi.dev/docs/latest/compaction), [CLI](https://pi.dev/docs/latest/cli), [Code Mode](https://pi.dev/docs/latest/codemode), [Usage](https://pi.dev/docs/latest/usage), [RPC](https://pi.dev/docs/latest/rpc), [MCP](https://pi.dev/docs/latest/mcp), [Quickstart](https://pi.dev/docs/latest/quickstart)
+- [earendil-works/pi](https://github.com/earendil-works/pi): [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools), [`agent-loop.ts`](https://github.com/earendil-works/pi/blob/main/packages/agent/src/agent-loop.ts), [`types.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/extensions/types.ts), [`hello.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/hello.ts), [`tool-override.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/tool-override.ts)
 - Metadata của npm registry (`npm view`) cho `@earendil-works/pi-coding-agent` và `@mariozechner/pi-coding-agent` (đã deprecated), kiểm tra ngày 20/10/2026
 
 **Pi: bài viết của các tác giả**
@@ -664,4 +463,3 @@ Vậy câu hỏi không phải là Pi có tốt hơn các coding agent khác hay
 
 - Claude Code, [Tools reference](https://code.claude.com/docs/en/tools-reference), [MCP (gồm tool search)](https://code.claude.com/docs/en/mcp), [Skills](https://code.claude.com/docs/en/skills), [Configure permissions](https://code.claude.com/docs/en/permissions) và [Permission modes](https://code.claude.com/docs/en/permission-modes)
 - OpenAI Codex, [Customization](https://learn.chatgpt.com/docs/customization/overview), [MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security), và các tool handler mã nguồn mở trong [openai/codex](https://github.com/openai/codex/tree/main/codex-rs/core/src/tools) (commit `e18a20d`)
-- Docker, [Docker security](https://docs.docker.com/engine/security/)

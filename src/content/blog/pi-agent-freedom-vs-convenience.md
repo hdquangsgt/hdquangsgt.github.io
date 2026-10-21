@@ -1,12 +1,20 @@
 ---
-title: 'Pi Agent: The Trade-off Between Freedom and Convenience'
-description: 'Pi gives you a small agent core and an extension API, and hands you the rest. My experiments with extensions, sub-agents and sandboxing show what that freedom is worth, and the engineering and operating work it hands back to you.'
+title: 'Pi Agent: Freedom vs. Convenience — Understanding the Architecture'
+description: 'Part 1 of 2. Pi gives you a small agent core and an extension API. This part covers its design philosophy, the agent loop, tool calling, context management, and what that flexibility costs next to an integrated coding agent.'
 pubDate: 2026-10-19T09:00:00+07:00
+updatedDate: 2026-10-21T00:00:00+07:00
 category: AI Agents
 tags: [pi, coding-agents, security, architecture, claude-code]
 featured: false
 draft: false
 ---
+
+<div class="callout">
+
+**Part 1 of 2.** This part explains Pi's architecture and what its design makes possible. [Part 2: From Flexibility to Responsibility](/blog/pi-agent-freedom-vs-convenience-part-2/) covers what you have to build and maintain to make that flexibility reliable and secure.
+
+</div>
+
 
 <div class="callout">
 
@@ -31,9 +39,11 @@ draft: false
 
 That contrast is a statement about where the work sits, not about quality. In an integrated product, many supporting capabilities already exist when you open it. With Pi, I could change or build those pieces myself, and I started doing that.
 
-This article follows one argument. **Pi gives developers more freedom to shape the system around a model, and that freedom transfers responsibility to them.** Convenience doesn't disappear. It becomes something you build, integrate, test and maintain. I'll go from the architecture and its tool system, through my experiments, to what happens when execution fails, the permission boundary, the workflow problem and Code Mode, then ask whether a bigger toolset would have fixed any of it, and end on what I think the trade-off is.
+This article follows one argument. **Pi gives developers more freedom to shape the system around a model, and that freedom transfers responsibility to them.** Convenience doesn't disappear. It becomes something you build, integrate, test and maintain. This is Part 1 of two. It covers the architecture that makes that freedom possible: Pi's design philosophy, the agent loop, tool calling and extension points, context management, Code Mode, and how all of it compares with integrated coding agents. [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/) covers what the freedom costs in practice: orchestration, recovery, trust and isolation, and when the trade-off is worth it.
 
-## 2. What Pi is
+I'm writing for developers who care about how coding agents work inside, how far they can be customized, and what customization asks of them. This is an architecture and trade-off analysis. It is not a benchmark, an installation guide or a feature tour.
+
+## 2. Design philosophy: primitives, not a ready-made workflow
 
 <div class="callout documented">
 
@@ -43,7 +53,21 @@ This article follows one argument. **Pi gives developers more freedom to shape t
 
 ![Layered architecture of Pi. Four ways to drive it (interactive TUI, print/JSON, RPC, TypeScript SDK) sit on top of pi-coding-agent (sessions, context files, compaction, trust, settings), which sits on pi-agent-core (the agent loop) and pi-ai (a unified LLM API). Extensions hook into the coding agent from the side and can register tools and commands or block tool calls. At the bottom, the built-in tools run as the OS user that started Pi, with no path fence or approval prompt by default.](./images/pi-architecture.svg)
 
-Four built-in tools are on by default: `read`, `bash`, `edit` and `write`. Four more built-ins (`grep`, `find`, `ls` and the Windows-only `powershell`) are opt-in ([CLI reference](https://pi.dev/docs/latest/cli)). Section 3 covers the whole tool system. The homepage lists what Pi deliberately leaves out: "No sub-agents", "No plan mode", "No permission popups". For each it points to extensions, packages, or other tools instead ([pi.dev](https://pi.dev)).
+Four built-in tools are on by default: `read`, `bash`, `edit` and `write`. Four more built-ins (`grep`, `find`, `ls` and the Windows-only `powershell`) are opt-in ([CLI reference](https://pi.dev/docs/latest/cli)). Section 4 covers the whole tool system. The homepage lists what Pi deliberately leaves out: "No sub-agents", "No plan mode", "No permission popups". For each it points to extensions, packages, or other tools instead ([pi.dev](https://pi.dev)).
+
+<div class="callout opinion">
+
+<span class="label opinion">Opinion</span> The omissions describe a design stance. An integrated coding agent ships a workflow: planning, delegation and approvals are already wired together. Pi ships primitives (a loop, a few tools, hooks, a session store) and expects you to assemble the workflow you want. Neither stance is better in general. A ready-made workflow saves work, and primitives give you control over how the work is done.
+
+</div>
+
+<div class="callout opinion">
+
+<span class="label opinion">Opinion</span> The question that follows is whether Pi is a complete coding application or an agent foundation you build on. I read it as the second. My experiments, described in [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/), are what pushed me there.
+
+</div>
+
+## 3. The agent loop
 
 The loop itself is small. Pi appends your message to the active branch, builds a request from the system prompt, the branch, the tool definitions and the model settings, streams the reply, runs every tool call in it, and records the results. If those results or queued messages need another request, a new turn starts. Otherwise the run ends ([How Pi works](https://pi.dev/docs/latest/how-pi-works)).
 
@@ -57,9 +81,35 @@ The loop itself is small. Pi appends your message to the active branch, builds a
 
 <div class="callout opinion">
 
-<span class="label opinion">Opinion</span> Steering is the first piece of "control" that section 5 returns to, and it is control for a person at the keyboard. It says nothing about how a parent agent would steer a sub-agent. The `agent_end` / `agent_settled` split matters for the same reason recovery does in section 6: "the run ended" and "nothing more will happen" are different statements.
+<span class="label opinion">Opinion</span> Steering is the first piece of "control" that [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/) returns to, and it is control for a person at the keyboard. It says nothing about how a parent agent would steer a sub-agent. The `agent_end` / `agent_settled` split matters for the same reason recovery does in Part 2: "the run ended" and "nothing more will happen" are different statements.
 
 </div>
+
+### Five ways to drive the same loop
+
+The loop doesn't depend on the terminal. The docs list several ways to drive the same agent ([CLI](https://pi.dev/docs/latest/cli), [How Pi works](https://pi.dev/docs/latest/how-pi-works)):
+
+| Interface | Intended use |
+|---|---|
+| Interactive (default) | Terminal UI for a person. |
+| Print (`-p`) | One prompt, final text to stdout, then exit. |
+| JSON (`--mode json`) | One-shot run that writes agent events as JSONL. |
+| RPC (`--mode rpc`) | Long-running process driven by JSONL commands on stdin, events on stdout. |
+| SDK | TypeScript library creating and controlling sessions in-process. |
+
+[Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/) looks at what building on RPC or the SDK asks of you.
+
+## 4. Tool calling and extension points
+
+I've used the word "tool" throughout, and the rest of the article leans on it. Permissions, observability, sub-agents and recovery are all, underneath, questions about tool calls. So it's worth being exact about what a tool is in Pi before going further.
+
+<div class="callout documented">
+
+<span class="label documented">Documented</span> In Pi's extension guide, a tool "defines a name, model-facing description, TypeBox parameter schema, and `execute()` function" ([extensions guide](https://pi.dev/docs/latest/extensions)). Pi's built-in tools have the same shape: each file under [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) defines a description, a TypeBox schema and an implementation. The model never touches your file system. It emits a structured request, and Pi's code does the work.
+
+</div>
+
+### Four layers of customization
 
 The docs separate the customization mechanisms, and the difference matters for everything below ([How Pi works](https://pi.dev/docs/latest/how-pi-works)):
 
@@ -70,34 +120,18 @@ The docs separate the customization mechanisms, and the difference matters for e
 | Extensions | TypeScript modules loaded into the Pi process. They register tools, commands, providers, event handlers and UI. | Code. They can block tool calls, and run with the process's OS permissions. |
 | Packages | A way to distribute extensions, skills, templates and themes through npm or git | Same as their contents. |
 
-The homepage says MCP is now built in, together with Codemode (section 10).
+The homepage says MCP is now built in, together with Codemode (section 6).
 
 These layers answer different questions, and picking the wrong one is the easy mistake. Before writing code, ask what the requirement actually is:
 
 - **Instructions or reusable knowledge** (how this repo builds, which conventions apply): a context file, a skill, or a prompt template. A skill fits when a workflow "needs more context than a prompt template but does not need a new executable integration point" ([Skills](https://pi.dev/docs/latest/skills)).
 - **Runtime behavior or tool execution** (block a call, add a tool, change what the model sees): an extension.
-- **Integration with other systems:** an extension, MCP, or driving Pi from outside through RPC or the SDK (section 9).
+- **Integration with other systems:** an extension, MCP, or driving Pi from outside through RPC or the SDK (see the interface table in section 3).
 - **Distribution and upkeep of a set of these:** a package. Packages are only a delivery mechanism, and they "can execute extension code and can include skills that instruct the model to run programs", so reviewing their source is on you ([Packages](https://pi.dev/docs/latest/packages)).
 
 <div class="callout opinion">
 
 <span class="label opinion">Opinion</span> Reaching for an extension when a skill would do means owning TypeScript that has to track Pi's API. Reaching for a skill when you need enforcement means relying on a model that may ignore it. I haven't described a case where I chose wrongly, and I won't invent one. The point is that the extension API is powerful enough that the choice is easy to skip.
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> The question that follows is whether Pi is a complete coding application or an agent foundation you build on. I read it as the second. My experiments are what pushed me there.
-
-</div>
-
-## 3. Tools: what the model can actually do
-
-I've used the word "tool" throughout, and the rest of the article leans on it. Permissions, observability, sub-agents and recovery are all, underneath, questions about tool calls. So it's worth being exact about what a tool is in Pi before going further.
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> In Pi's extension guide, a tool "defines a name, model-facing description, TypeBox parameter schema, and `execute()` function" ([extensions guide](https://pi.dev/docs/latest/extensions)). Pi's built-in tools have the same shape: each file under [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) defines a description, a TypeBox schema and an implementation. The model never touches your file system. It emits a structured request, and Pi's code does the work.
 
 </div>
 
@@ -142,7 +176,7 @@ Two more tools come from Pi's built-in *extensions*, not from the core tool set.
 
 | Tool | Responsibility |
 |---|---|
-| `codemode` | The model writes JavaScript that calls other tools; only the script's output comes back (section 10) |
+| `codemode` | The model writes JavaScript that calls other tools; only the script's output comes back (section 6) |
 | `tool_search` | Finds tools that aren't declared to the model and declares the matches for the next call |
 
 <div class="callout documented">
@@ -194,7 +228,7 @@ export default function (pi: ExtensionAPI) {
 
 ### Tool, extension, skill, MCP server, package
 
-Section 2 separated the customization mechanisms by what they enforce. Here is the same split by what each one does to the model's tool surface:
+The table in "Four layers of customization" above separated the customization mechanisms by what they enforce. Here is the same split by what each one does to the model's tool surface:
 
 | Mechanism | Adds a model-callable operation? | Runs code in the Pi process? |
 |---|---|---|
@@ -219,31 +253,25 @@ Section 2 separated the customization mechanisms by what they enforce. Here is t
 
 <div class="callout opinion">
 
-<span class="label opinion">Opinion</span> Two consequences follow. First, a custom tool is a new capability that has to be designed: a good description and schema, bounded output, honest errors and a decision about what it may touch. Nothing in Pi does that review for you. Second, a `tool_call` hook can refuse calls, but Pi's own security page puts the real boundary at the operating system, not at the hook. Read in this light, my experiments in section 4 were attempts to build behavior at this layer. That's an interpretation. I'm not reporting which hooks or tools each experiment used.
+<span class="label opinion">Opinion</span> Two consequences follow. First, a custom tool is a new capability that has to be designed: a good description and schema, bounded output, honest errors and a decision about what it may touch. Nothing in Pi does that review for you. Second, a `tool_call` hook can refuse calls, but Pi's own security page puts the real boundary at the operating system, not at the hook. Read in this light, my experiments (described in [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/)) were attempts to build behavior at this layer. That's an interpretation. I'm not reporting which hooks or tools each experiment used.
 
 </div>
 
-## 4. Building the missing pieces
+### Extension hooks: where behavior can be changed
 
-<div class="callout observed">
+The extension API lets you change behavior at specific points in a run. The figure lists the hooks in the order they fire and what each can do: some only observe, some transform what passes through, and a few can block.
 
-<span class="label observed">Observed</span> I experimented with extensions to get capabilities I didn't find in the form I wanted:
+![The order of extension hooks. A run starts with input (can consume or transform), before_agent_start (changes prompt sections and tools) and agent_start. Each turn runs turn_start, context (transforms messages), before_provider_request (changes the payload), after_provider_response and the message events. Each tool call inside a turn runs tool_execution_start, tool_call (can authorize or block), tool_execution_update, tool_result (can redact or replace) and tool_execution_end, then the turn ends with turn_end. After the turns come agent_end, agent_before_settle (can request one more run) and agent_settled. A legend marks which hooks can block, which can transform, and which only observe.](./images/extension-lifecycle.svg)
 
-- an **orchestrator**,
-- **sub-agents**, for work with long sessions or a lot of context,
-- extensions intended to **restrict permissions**,
-- an attempt to run **Pi inside a Docker container** as a sandbox.
+<div class="callout documented">
 
-These ran into implementation difficulties and errors. Even so, they taught me more about how an agent works internally. The difficulty I can describe most precisely was watching what the sub-agents were doing, which section 5 takes apart. I don't itemize the individual errors here. I also don't report a configuration or results for the Docker attempt, so nothing in this article treats it as a test of Pi's security.
+<span class="label documented">Documented</span> `tool_call` can authorize, change or block a call, and a handler that throws blocks it. `tool_result` can redact, annotate or replace the result. `turn_end` and `agent_before_settle` can append entries and ask for a continuation, and the docs say to guard against loops. `provider_stream_event` is notification-only and awaited in stream order, so a slow handler delays the stream. `pi.events` lets extensions message each other, and `pi.appendEntry()` stores data in the session without sending it to the model. The examples directory includes `debug-provider.ts`, an opt-in viewer for raw provider stream events. ([extensions guide](https://pi.dev/docs/latest/extensions))
 
 </div>
 
-The sequence matters more than any one error. The motivation for the sub-agents was long sessions and large contexts. I didn't find what I wanted in the form I wanted, so I tried building it. Beyond the effort, what that left me with were questions about delegation: what an orchestrator is responsible for, where a sub-agent's results and failures go, and who can see them. The rest of this article follows those questions. That is my reading of my own experiment. It's an interpretation of what happened when I built these pieces, not a claim that Pi lacks delegation capabilities in general.
+These hooks come back in [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/), where the question is who builds the view of what an agent is doing, and what happens when it fails.
 
-What the documentation sets up is a separate, checkable matter. Pi names "no sub-agents" as a choice. Its extension guide doesn't mention sub-agents either, though it does let an extension run other tools with `ctx.executeTool()`, and those nested calls pass through the same `tool_call` handlers as model-issued ones ([extensions guide](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)). So an orchestrator isn't something you configure. It's something you design.
-
-### Context is more than a window
-
+## 5. Context management: more than a window
 
 Start with what fills the window at all. The system prompt is Pi's base instructions plus the context files it finds. Tool definitions go out with every request, and the active branch is converted into user, assistant and tool-result messages. Skills load progressively: only each skill's name, description and path go into the system prompt, and the full `SKILL.md` is read when the model decides a task matches the description. A skill with `disable-model-invocation: true` is available only through its explicit `/skill:name` command. Your own message can carry `@` file references, pasted images and `!command` output (`!!command` runs a command without sending the output to the model), and extensions can add instructions or transform the context before the request leaves ([How Pi works](https://pi.dev/docs/latest/how-pi-works), [Skills](https://pi.dev/docs/latest/skills), [Usage](https://pi.dev/docs/latest/usage), [extensions guide](https://pi.dev/docs/latest/extensions)).
 
@@ -254,7 +282,7 @@ Start with what fills the window at all. The system prompt is Pi's base instruct
 <span class="label opinion">Opinion</span> Two consequences. A skill's description is its routing signal, so a vague one routes badly, which the Skills page says too. And because descriptions are always in the prompt, a large skill collection has a standing cost on every request. I haven't measured that cost, so I treat it as a design consideration and not a number.
 
 </div>
-Long contexts were the reason I wanted sub-agents, so it's worth being exact about what Pi's own mechanisms do. Three things are easy to blur together:
+Long contexts were the reason I wanted sub-agents (the story is in [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/)), so it's worth being exact about what Pi's own mechanisms do. Three things are easy to blur together:
 
 <div class="callout documented">
 
@@ -276,7 +304,7 @@ Long contexts were the reason I wanted sub-agents, so it's worth being exact abo
 
 <div class="callout opinion">
 
-<span class="label opinion">Opinion</span> So context management isn't only about fitting more into a window. It's also about choosing which history the agent carries forward and which path it takes next. But none of this is shown to solve exhaustion by itself. Compaction can fail (the docs say to fix the provider problem and run `/compact` again), a summary is lossy by nature, and the on-disk record doesn't re-enter the model's context on its own. Branching helps a person steer; it doesn't make a long task continue by itself. I haven't tested how these features behave under my orchestrator experiments, so I can't say whether they'd have removed the need for sub-agents.
+<span class="label opinion">Opinion</span> So context management isn't only about fitting more into a window. It's also about choosing which history the agent carries forward and which path it takes next. But none of this is shown to solve exhaustion by itself. Compaction can fail (the docs say to fix the provider problem and run `/compact` again), a summary is lossy by nature, and the on-disk record doesn't re-enter the model's context on its own. Branching helps a person steer; it doesn't make a long task continue by itself. I haven't tested how these features behave under my orchestrator experiments (see [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/)), so I can't say whether they'd have removed the need for sub-agents.
 
 </div>
 
@@ -286,227 +314,7 @@ Long contexts were the reason I wanted sub-agents, so it's worth being exact abo
 
 </div>
 
-## 5. When delegation becomes hard to see
-
-<div class="callout observed">
-
-<span class="label observed">Observed</span> While experimenting with sub-agents, I found it hard to watch what they were doing. The main agent could keep reporting that work was in progress, while I had little or no clear view of what a sub-agent was actually doing.
-
-</div>
-
-The observation is about a gap: a general progress signal versus the ability to inspect real execution. It's easy to build the first and skip the second. I'm not claiming my extension had or lacked any particular mechanism. The point below is what a delegating system needs, if you want to trust it.
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> Launching a sub-agent is only orchestration. Understanding it takes more:
-
-- **Status versus progress.** "Running" says a task exists. It doesn't say whether it's reading files, waiting on a model, or stuck.
-- **Execution events.** The tool calls and intermediate results of the child, not only its final answer.
-- **Tracing across levels.** A way to connect a child's actions to the parent request that caused them.
-- **Failure handling.** Timeouts, stalled tasks, and an error path that reaches the parent as something other than silence.
-
-</div>
-
-Pi's building blocks cover part of this. Sessions are stored as JSONL trees recording messages, tool calls and results, and compactions, and JSON and RPC modes stream agent events ([How Pi works](https://pi.dev/docs/latest/how-pi-works)). The extension API adds finer-grained hooks. Lifecycle events include `agent_start`, `turn_start`, `message_update` and `agent_settled`, and tool execution has `tool_execution_start`, `tool_execution_update` (progress during a call) and `tool_execution_end`. For nested calls made through `ctx.executeTool()`, these events carry a `parentToolCallId` ([extensions guide](https://pi.dev/docs/latest/extensions)). The SDK exposes `session.subscribe()` for events of one in-process session ([SDK](https://pi.dev/docs/latest/sdk)). These are building blocks, and I haven't verified how they behave across separate child Pi processes. The docs I read describe no dashboard, metrics or tracing system beyond them. Whether a child process appears in that record usefully depends on how you launch it. That's a design decision you own.
-
-The extension API is where those building blocks get specific. The figure lists the hooks in the order they fire and what each can do: some only observe, some transform what passes through, and a few can block.
-
-![The order of extension hooks. A run starts with input (can consume or transform), before_agent_start (changes prompt sections and tools) and agent_start. Each turn runs turn_start, context (transforms messages), before_provider_request (changes the payload), after_provider_response and the message events. Each tool call inside a turn runs tool_execution_start, tool_call (can authorize or block), tool_execution_update, tool_result (can redact or replace) and tool_execution_end, then the turn ends with turn_end. After the turns come agent_end, agent_before_settle (can request one more run) and agent_settled. A legend marks which hooks can block, which can transform, and which only observe.](./images/extension-lifecycle.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> `tool_call` can authorize, change or block a call, and a handler that throws blocks it. `tool_result` can redact, annotate or replace the result. `turn_end` and `agent_before_settle` can append entries and ask for a continuation, and the docs say to guard against loops. `provider_stream_event` is notification-only and awaited in stream order, so a slow handler delays the stream. `pi.events` lets extensions message each other, and `pi.appendEntry()` stores data in the session without sending it to the model. The examples directory includes `debug-provider.ts`, an opt-in viewer for raw provider stream events. ([extensions guide](https://pi.dev/docs/latest/extensions))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> This is the most concrete support I found for the argument of this section. The seams for watching an agent exist, down to individual tool calls and provider events. What the docs don't describe is a finished view built from them. So the question isn't whether Pi can be observed. It's who builds the view.
-
-</div>
-
-Put together, three properties are separate, and an agent can have the first without the others:
-
-- **Execution:** it can perform actions.
-- **Observability:** you can tell what it is doing and where it is.
-- **Control:** you can intervene, change approach, or stop it.
-
-Delegation without observability creates a system that can act without being easy to understand. That's a conclusion about the design, not a claim that every multi-agent system works this way.
-
-Control has a documented side too. A person can steer, queue a follow-up or abort (section 2), and a program can do the same over RPC. Those act on a Pi session. How a parent agent would apply them to a child, when it should, and what the child does with them are decisions I would have to design. I'm not claiming Pi can't do it.
-
-## 6. When execution stops
-
-<div class="callout observed">
-
-<span class="label observed">Observed</span> During normal use I ran into unexpected failures: model response errors, incorrect tool usage, and context window exhaustion. In some cases, execution stopped without automatically recovering in a way that let the task continue. I had to step in, diagnose the problem, adjust the execution state or my approach, and find a way to resume. Some failures I could resolve that way, and the task went on after a minor interruption. Others stopped the task from progressing at all.
-
-</div>
-
-That gives two groups, and the difference between them is the useful part: **interruptions I could recover from** by diagnosing and resuming, and **failures that blocked the task**. I'm not assigning particular failures (a response error, a tool misuse, context exhaustion) to either group, and I'm not saying any of them is unrecoverable in general. Whether a failure resumes depends on the model, the provider, the configuration and any extensions, and my account doesn't map one to the other.
-
-This is a different problem from the one in section 5. Observability asks whether you can see what an agent is doing. Recovery asks what happens when what it's doing breaks. An agent's ability to **execute** a task and its ability to **recover** when execution fails are separate properties. A system can be very good at the first and say little about the second.
-
-I shouldn't overstate what Pi lacks, because it does have recovery behavior, and the docs describe it:
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> Pi has automatic agent-level retry for "transient failures", enabled by default, with a default of 3 attempts and exponential backoff starting at 2 seconds and capped at 60 seconds ([Settings](https://pi.dev/docs/latest/settings)). It also has automatic compaction, which starts when free context drops below a reserve (16,384 tokens by default). On a provider overflow or length error, Pi runs a recovery compaction and then starts the retry as a fresh run. If that recovery compaction fails or is cancelled, Pi "schedules no internal retry" ([Compaction](https://pi.dev/docs/latest/compaction)). When a tool itself fails, the failure becomes an error result for the model ([extensions guide](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)).
-
-</div>
-
-So the accurate statement isn't that Pi never recovers. Some failures have a built-in path, and some paths are bounded: three retries by default, and a compaction recovery that ends without a retry if compaction itself fails. The docs I read don't list which errors count as transient. They also don't describe built-in handling for a model that keeps using a tool incorrectly, or for a run that ends in a state you want to resume. I don't know whether any of my failures fell inside or outside the built-in paths. I'm not claiming they were gaps in Pi. They may have been cases where the defaults were exhausted or didn't apply.
-
-The figure draws those paths and what happens when each one runs out. Solid boxes are documented behavior. The dashed row marks a gap in what I read, not a claim about Pi.
-
-![Recovery paths in three columns: trigger, built-in response, and what happens when that runs out. A transient provider failure triggers agent-level retry (on by default, 3 attempts, backoff from 2 s capped at 60 s); when attempts are used up the failure is yours to handle. A context overflow or early length stop triggers recovery compaction and one retry as a fresh run; if compaction fails or is cancelled there is no internal retry. Free context below the 16,384-token reserve triggers auto-compaction, and the summary is lossy. A failing tool call returns an error result to the model, and whether it changes approach is up to the model. A dashed last row, repeated tool misuse or a run stuck in a bad state, has nothing described in the docs I read, and ends with you inspecting, adjusting and resuming.](./images/recovery-paths.svg)
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> Whether a particular failure resumes by itself is less important than who decides what "recovered" means. Reliable recovery tends to need decisions about:
-
-- **Retry strategy.** Which errors to retry, how often, and when to stop retrying and escalate.
-- **Error handling.** Whether a bad tool call becomes a message to the model, a stop, or a request for you.
-- **Context management.** What gets summarized or dropped when the window fills, and whether the task survives it. Compaction summarizes earlier work, so what the summary keeps shapes what the agent knows afterwards.
-- **Explicit recovery workflows.** A defined way to inspect the failed state, adjust it and resume, rather than improvising each time.
-
-</div>
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> The pieces for building that last row from outside are documented too. Over RPC, a controlling program can switch auto-retry and auto-compaction on or off (`set_auto_retry`, `set_auto_compaction`), abort a retry in progress (`abort_retry`), compact on demand (`compact`), and watch `compaction_start`, `compaction_end` and the `summarization_retry_*` events. Inside the process, `session_before_compact` can replace Pi's summary, and `session_compact_failed` fires when compaction fails or is aborted. ([RPC](https://pi.dev/docs/latest/rpc), [Compaction](https://pi.dev/docs/latest/compaction))
-
-</div>
-
-<div class="callout proposal">
-
-<span class="label proposal">Proposal</span> A small supervisor over RPC: let the built-in retry run, watch the compaction and retry events, and when a run settles in a failed state, apply a policy I wrote, such as compacting with explicit instructions, switching model, or handing the task back to me. I haven't built or tested this.
-
-</div>
-
-Pi gives you parts of this, and its session tree, which keeps the original entries even after compaction, is a useful record to resume from ([How Pi works](https://pi.dev/docs/latest/how-pi-works)). I haven't looked for packages that add retry or safer compaction, so I can't say whether they exist or how well they work. In an integrated product, more of these decisions may already be made for you. With Pi, defaults are a starting point, and the rest is yours to design, test and maintain. That's the same trade-off as before, seen from the failure case: freedom to customize an agent doesn't come with a guarantee that it recovers gracefully.
-
-## 7. The real permission boundary
-
-The permission-restricting extensions and the Docker attempt from section 4 raised the question of what actually limits an agent. A prompt, a restricted tool and a container are different things, so it helps to separate them.
-
-The loop is conceptual, not a diagram of Pi's internals:
-
-> context → model → tool request → runtime → execution environment → tool result → updated context
-
-Five layers can each be called "permission":
-
-1. **Process permissions.** What the OS user running the agent can do. Anything inside the process is bounded by this.
-2. **Application-level checks.** Rules in the agent that inspect a tool call and allow, ask or deny it.
-3. **Project-directory boundary.** Whether the working directory is a fence or only a starting point.
-4. **Tool capabilities.** A structured `read` can be fenced by path. A shell can run any program, which can open any file.
-5. **Isolation.** Containers, VMs and OS sandboxes restrict the process itself, including its children.
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> Pi's [security page](https://pi.dev/docs/latest/security) says Pi "can read, change, and execute files with the permissions of the account that started it" and "does not ask for approval before every tool call". The working folder controls resource discovery and the default tool location, but it doesn't limit commands from reaching other paths. Watching the transcript, trusting a project and reviewing changes are not security boundaries. The recommended option is running Pi entirely inside a container, VM or sandbox, with narrow, short-lived credentials and restricted network where possible.
-
-</div>
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> In the source, [`read.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/read.ts) accepts relative or absolute paths and checks only that the file is readable. The path helpers it calls ([`path-utils.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/path-utils.ts) and [`utils/paths.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/utils/paths.ts)) keep an absolute path as it is and join a relative one to the working directory. Neither compares the result to the working directory. I read this code on the main branch, whose package version is 1.3.0, but I haven't run Pi's tools, and I haven't traced every route a file can be read by. Don't treat it as a tested result.
-
-</div>
-
-That fits the documentation: by default there's no application-level fence. But the absence of a prompt doesn't prove unrestricted access in every setup. An extension can add checks. The `tool_call` event can mutate or block a call, and a handler that throws blocks it fail-closed ([extensions guide](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)). A prompt doesn't prove comprehensive security either. Claude Code's docs say its Read and Edit deny rules apply to its built-in file tools, to file commands it recognizes in Bash such as `cat`, and to redirection targets. They don't apply to a command that reads files without naming them, such as `grep -r pattern .`, or to a script that opens files itself. For OS-level enforcement the docs point to its sandbox, and they say `bypassPermissions` mode should only be used in isolated environments like containers or VMs ([permissions](https://code.claude.com/docs/en/permissions)). So both sets of docs point to isolation for the real boundary. They differ in the default between you and it. In Claude Code's Manual mode (the config value `default`), it asks before most actions that edit files, run shell commands or reach the network ([permission modes](https://code.claude.com/docs/en/permission-modes)). A built-in set of read-only commands such as `cat` and `ls` runs without a prompt, including on paths outside the working directory, unless `permissions.blockReadsOutsideWorkingDirectories` is turned on. The docs also say that from v2.1.283, auto mode is the starting mode for interactive terminal and VS Code sessions, with a classifier reviewing actions instead of you. Pi asks for nothing. I compared documentation, not behavior: I haven't run Claude Code for this article.
-
-![Three setups compared by the path a tool call takes. Pi default: no application check and no OS sandbox, so the call can reach everything the OS user can access. Pi hardened (a proposal): your extension blocks or confirms calls, a container or VM mounts only the project, so the call reaches the mounted project and scoped credentials. Claude Code in Manual mode: permission rules and the mode prompt for edits, shell commands and network access, while read-only commands such as cat run without a prompt. An optional sandbox setting exists, and the call reaches the OS user's access filtered by approvals.](./images/permission-layers.svg)
-
-Two Pi-specific details are easy to miss:
-
-- **Project trust is not a sandbox.** It gates what a folder supplies: project settings and MCP servers, extensions, skills, prompt templates and themes under `.pi`, system-prompt files, and project-configured packages. It "prevents a folder from silently loading executable extensions before you approve it", and the security page says it "does not limit what tool calls can access or affect". Extensions run "inside the Pi process with the same operating-system permissions", so a trusted extension can read prompts, tool calls, files and session history ([extensions guide](https://pi.dev/docs/latest/extensions)). Context files (`AGENTS.md`, `CLAUDE.md`) load without trust ([Configuration](https://pi.dev/docs/latest/configuration)). Instructions in a repository you cloned can reach the model whether or not you trusted it. Whether a given model would act on a hostile instruction is a separate question I haven't tested.
-
-- **Docker is a tool, not a guarantee.** What a container actually isolates depends on what you mount, which credentials you pass in, whether the network is open, and which user it runs as. A container that mounts your home directory and an API key with broad scope has moved the problem, not solved it. This is general container security, not a result from my attempt ([Docker security](https://docs.docker.com/engine/security/)).
-
-In short, three questions get mixed up. **Trust** asks whether a folder's own resources may load. **Permissions** ask what the running process and its tools can technically do. **Isolation** asks what stays out of reach even if an agent or extension misbehaves. Pi's docs provide the first, describe the second, and leave the third to you. I haven't audited Pi's security beyond reading these pages and one tool's source.
-
-### What Pi's containerization guide offers
-
-"Bring the container" would be thin advice on its own, and the docs go further. The [containerization guide](https://pi.dev/docs/latest/containerization) describes four options, and they differ in what the boundary contains:
-
-![Two isolation scopes. Whole-process isolation (Docker, Docker Sandboxes, OpenShell): a container or sandbox boundary encloses the Pi process, including its extensions and extension tools, and the built-in tools and bang commands; the host is reached only through what you mount or pass in. Tool-only isolation (the Gondolin extension): the Pi process and its extensions stay on the host, and only the built-in tools and bang commands run inside a local Linux micro-VM. Both depend on what you mount, which credentials you pass in, and whether the network is open.](./images/isolation-scope.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> **Plain Docker** runs the whole Pi process in a container (the guide's Dockerfile is based on `node:24-bookworm-slim`), mounts the working folder at `/workspace`, passes keys with `-e`, and keeps settings and sessions in a named volume. **Docker Sandboxes** runs Pi in a managed sandbox where the real credential stays on the host and a proxy substitutes it for requests to the configured host. **OpenShell** runs Pi in a local or remote sandbox with filesystem, process, network, credential and inference policies. A remote one doesn't bind-mount your folder, so you transfer files explicitly. **Gondolin** is an extension that runs Pi on the host but routes the built-in tools and `!` commands into a local Linux micro-VM. Other extension tools still run on the host unless they delegate. The guide warns against mounting `~/.pi/agent` (credentials, settings, extensions, sessions) unless that access is intended, notes that environment variables passed into a container are visible inside it, and says Gondolin's commands inherit the host environment, so keys set as environment variables may be visible in the VM. It also says to review the Gondolin example before adding tools that could bypass the VM boundary. ([Containerization](https://pi.dev/docs/latest/containerization))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> This makes the permission story concrete, and it sharpens the choice. Whole-process isolation also contains the extensions I load, which matters because my own experiments were extensions. Tool-only isolation fences the built-in tools but leaves my extension's code, and any tool it registers, on the host. Neither is wrong, since they answer different questions. The work is real either way: pick one, mount narrowly, scope credentials, and keep the setup working as Pi and your extensions change. That is why the proposal below leans toward whole-process isolation.
-
-</div>
-
-<div class="callout proposal">
-
-<span class="label proposal">Proposal</span> If I used Pi on real work, I'd start with the container documented as the strongest option, mount only the project, and pass a scoped key. I'd add a `tool_call` extension for visibility and catching mistakes, not as the wall. I haven't tested this setup.
-
-</div>
-
-## 8. From agent to workflow
-
-Once I looked at using Pi in projects that already used AI-assisted development, a different problem appeared. Capability isn't workflow. A capable agent doesn't know how a project builds, which conventions it follows, which tests must pass, or when work counts as done.
-
-The rest of this section is analysis of what fitting an agent into a project costs. It is general reasoning, not a report of something that went wrong in a particular project of mine.
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> **Capabilities say what the agent can do. Workflow says how work proceeds, under which constraints, and how completion is checked.** Fitting an agent into an existing project raises questions like:
-
-- **Context.** Where do project rules live? Pi loads `AGENTS.md` and `CLAUDE.md` as context files, so existing instructions can carry over. Instructions still aren't enforcement.
-- **Tools.** Existing scripts work through `bash`. That's cheap, but the model has to learn them from a README or `--help`.
-- **Coordination.** If other AI-assisted processes touch the same repository, who decides what runs when?
-- **Validation.** Who ensures tests and reviews actually run? Instructions are advisory. An extension or an external harness (RPC, JSON mode, SDK) is where checks can be enforced.
-- **Handoff.** How does the agent say it's finished, and how does the next person or process know?
-
-</div>
-
-This is where the earlier sections meet. Observability, recovery and the permission boundary are workflow questions at heart: what does the system do, can anyone see it, and what constrains it. An integrated product has made many of those decisions already. With Pi, you make them.
-
-## 9. No built-in WebUI doesn't mean no integration options
-
-Pi has no integrated web interface, which I felt as a gap. But a missing UI and missing interfaces are different things. The docs list several ways to drive the same agent ([CLI](https://pi.dev/docs/latest/cli), [How Pi works](https://pi.dev/docs/latest/how-pi-works)):
-
-| Interface | Intended use |
-|---|---|
-| Interactive (default) | Terminal UI for a person. |
-| Print (`-p`) | One prompt, final text to stdout, then exit. |
-| JSON (`--mode json`) | One-shot run that writes agent events as JSONL. |
-| RPC (`--mode rpc`) | Long-running process driven by JSONL commands on stdin, events on stdout. |
-| SDK | TypeScript library creating and controlling sessions in-process. |
-
-So a web front end isn't blocked. You could build one over RPC or the SDK. What the interfaces don't do is the work around them: rendering the UI, handling streamed output, keeping session state, deciding what happens on errors (section 6), and managing the agent's lifecycle. The SDK page even names a subtlety you'd have to handle: `agent_end` marks the end of one run, while `agent_settled` signals that Pi won't continue automatically. I haven't built such a front end, so this describes the documented surface and not my experience.
-
-The details are where the work hides ([RPC](https://pi.dev/docs/latest/rpc)). The figure shows the shape of one prompt over the RPC interface, and the part a naive client gets wrong.
-
-![RPC prompt lifecycle between a client and pi --mode rpc. The client sends a prompt with an id. Pi replies with a response carrying the same id and success true, which means the prompt was accepted, queued or handled, not finished. Pi then streams message_update events, then agent_end when one run is over, possibly compaction and retry events and another run, and finally agent_settled, which means Pi will not continue on its own.](./images/rpc-lifecycle.svg)
-
-<div class="callout documented">
-
-<span class="label documented">Documented</span> Records are JSON objects terminated by LF, and clients should split only on LF: the docs warn that Node.js `readline` also splits on U+2028 and U+2029, which can appear inside JSON strings. Stdout carries only protocol records, and diagnostics go to stderr. Commands take an optional `id` that the response repeats, and responses can arrive out of order. A successful `prompt` response means the prompt was accepted, queued or handled, not that the work finished. If `data.disposition` is `"handled"`, no run starts and `agent_settled` won't follow. Clients should subscribe before sending the prompt, and closing stdin requests an orderly exit. The command set covers sessions (`fork`, `clone`, `get_tree`, `export_html`), models (`set_model`, `set_thinking_level`) and `compact`, so a front end could offer much of what the TUI does. Extension dialogs and notifications are forwarded over RPC, but custom components aren't. ([RPC](https://pi.dev/docs/latest/rpc), [extensions guide](https://pi.dev/docs/latest/extensions))
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> A client that treats the first response as completion, or reads lines with a generic reader, can work in a demo and misbehave later. None of this is hard, but it is the kind of detail a missing WebUI hands to you.
-
-</div>
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> The missing WebUI is a small version of the whole trade-off. The ready-made experience isn't there, and a custom one is possible, but whoever builds it owns it. I don't claim the omission was a philosophical choice. The docs I read don't say.
-
-</div>
-
-## 10. Code Mode: a design direction I haven't tried
+## 6. Code Mode: a design direction I haven't tried
 
 I found Pi's Code Mode in the docs. I **haven't used it on a real task**, so this section describes the documented design and nothing about results.
 
@@ -532,13 +340,14 @@ I found Pi's Code Mode in the docs. I **haven't used it on a real task**, so thi
 
 <div class="callout opinion">
 
-<span class="label opinion">Opinion</span> Code Mode and multi-agent orchestration solve different problems. Code Mode composes **tool calls** inside one agent turn, so intermediate results don't cost context or round trips. Orchestration splits **work** across agents, each with its own model interaction. Code Mode doesn't replace the orchestrator I tried to build, and I can't say it would have helped. What I find interesting is that the sandbox is explicit: the script's reach is exactly the tools it's given. The trade-off from section 5 still applies. A script that batches many calls into one output is efficient, and also a place where intermediate activity is hidden from the model.
+<span class="label opinion">Opinion</span> Code Mode and multi-agent orchestration solve different problems. Code Mode composes **tool calls** inside one agent turn, so intermediate results don't cost context or round trips. Orchestration splits **work** across agents, each with its own model interaction. Code Mode doesn't replace the orchestrator I tried to build, and I can't say it would have helped. What I find interesting is that the sandbox is explicit: the script's reach is exactly the tools it's given. The observability trade-off from [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/) still applies. A script that batches many calls into one output is efficient, and also a place where intermediate activity is hidden from the model.
 
 </div>
 
 I'd like to try it on a real task before judging it. Until then it stays a hypothesis.
 
-## 11. More tools, a better agent?
+
+## 7. Flexibility versus integration: more tools, a better agent?
 
 My first reaction to Pi's thin environment (section 1) was to count what was missing. The tool system makes that reaction worth examining, because it's tempting to turn "fewer built-in tools" into "less capable". I don't think tool count settles anything, and the comparison below is meant to show why.
 
@@ -568,7 +377,7 @@ My first reaction to Pi's thin environment (section 1) was to count what was mis
 
 <div class="callout documented">
 
-<span class="label documented">Documented</span> Pi's author has stated a rationale for the small set: in November 2025 Mario Zechner wrote that "these four tools are all you need for an effective coding agent", that Pi's system prompt and tool definitions "come in below 1000 tokens", and that popular MCP servers "dump their entire tool descriptions into your context on every session". He described Codex's tool definitions as "similarly minimal to pi's" and Claude Code as "a spaceship with 80% of functionality I have no use for" ([post](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)). Those are the author's opinions, from a post that also said Pi would not support MCP. Pi has since changed course on MCP (section 10), and I haven't verified the 1,000-token figure against the current version.
+<span class="label documented">Documented</span> Pi's author has stated a rationale for the small set: in November 2025 Mario Zechner wrote that "these four tools are all you need for an effective coding agent", that Pi's system prompt and tool definitions "come in below 1000 tokens", and that popular MCP servers "dump their entire tool descriptions into your context on every session". He described Codex's tool definitions as "similarly minimal to pi's" and Claude Code as "a spaceship with 80% of functionality I have no use for" ([post](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)). Those are the author's opinions, from a post that also said Pi would not support MCP. Pi has since changed course on MCP (section 6), and I haven't verified the 1,000-token figure against the current version.
 
 </div>
 
@@ -582,7 +391,7 @@ My claim is narrower than "fewer is better". **A larger toolset does not by itse
 
 **2. Tool selection and reasoning.** <span class="label opinion">Opinion</span> The intuition is that every extra tool is another option the model must weigh, which could make selection less predictable. I haven't measured that, and neither the Pi nor the Claude Code docs I read make a claim about selection accuracy, so I treat it as a hypothesis. What the docs do show is that both products built mechanisms to avoid declaring everything upfront (the figure), which suggests their authors take the cost of a large declared set seriously. That's an inference about intent, not a stated reason.
 
-**3. Extensibility versus built-in completeness.** <span class="label opinion">Opinion</span> A minimal core makes fewer assumptions and is easier to read end to end. The matching cost is the one this whole article is about: whatever the core leaves out, someone must build, test and maintain. Pi's extension API is generous, but a custom tool is code you own, written against an API that has changed (section 12 notes the package rename). An integrated harness has done that work once, for everyone.
+**3. Extensibility versus built-in completeness.** <span class="label opinion">Opinion</span> A minimal core makes fewer assumptions and is easier to read end to end. The matching cost is the one this whole article is about: whatever the core leaves out, someone must build, test and maintain. Pi's extension API is generous, but a custom tool is code you own, written against an API that has changed (the package rename below is one example). An integrated harness has done that work once, for everyone.
 
 **4. Control versus convenience.** <span class="label opinion">Opinion</span> A small default set is a clear base to customize: you can read what the model is offered, change it, and hook every call. A polished harness gives you something working on the first day. Both are real goods. Which one wins depends on whether you'll ever use the control, and I'd be dishonest to claim I always did.
 
@@ -596,9 +405,9 @@ My claim is narrower than "fewer is better". **A larger toolset does not by itse
 |---|---|
 | A short, readable surface: eight names, four by default | Anything beyond file work and `bash` is yours to build or install |
 | You choose what the model sees (`--tools`, `exposure`) | You must know that choice exists, and make it |
-| One hook point sees every call, nested ones included | The hook is a policy surface, not a sandbox; the boundary is yours to build (section 7) |
+| One hook point sees every call, nested ones included | The hook is a policy surface, not a sandbox; the boundary is yours to build (see [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/)) |
 | Few assumptions baked in, so fewer surprises from the harness | Common workflows (plans, sub-agents, approvals) start as a blank page |
-| Easy to embed through RPC or the SDK | Embedding makes you the owner of the glue (section 9) |
+| Easy to embed through RPC or the SDK | Embedding makes you the owner of the glue (see [Part 2](/blog/pi-agent-freedom-vs-convenience-part-2/)) |
 
 <div class="callout opinion">
 
@@ -612,9 +421,9 @@ My claim is narrower than "fewer is better". **A larger toolset does not by itse
 
 </div>
 
-## 12. Freedom, convenience, and who owns the system
+### Freedom, convenience, and who owns the system
 
-What do these experiments add up to? Extensibility is the point of Pi: programmable behavior, a single hook where every tool call can be inspected or refused, event streams you can build on, and a core small enough to understand. Each of those has a matching cost, and the cost is the same each time. The decision moved to me.
+What does this comparison add up to? Extensibility is the point of Pi: programmable behavior, a single hook where every tool call can be inspected or refused, event streams you can build on, and a core small enough to understand. Each of those has a matching cost, and the cost is the same each time. The decision moved to me.
 
 | What Pi gives you | What it asks of you |
 |---|---|
@@ -623,27 +432,17 @@ What do these experiments add up to? Extensibility is the point of Pi: programma
 | See and change architectural decisions | Make them well: permissions, isolation, observability, recovery from failure |
 | No bundled policy to fight | Supply your own, or work without one |
 
-The tool system is the clearest example. Pi gives you a small set of primitives and a place to add your own, and section 11 argues that this is a bet and not a deficit. Integrated products aren't the opposite of extensible. Claude Code, for example, has hooks, skills, sub-agents, plugins and MCP, and Pi isn't without conveniences. The difference is **how much is decided for you by default, and who maintains it**.
+The tool system is the clearest example. Pi gives you a small set of primitives and a place to add your own, and the comparison above argues that this is a bet and not a deficit. Integrated products aren't the opposite of extensible. Claude Code, for example, has hooks, skills, sub-agents, plugins and MCP, and Pi isn't without conveniences. The difference is **how much is decided for you by default, and who maintains it**.
 
-## 13. When should you use Pi?
+## 8. Conclusion: freedom is a design choice
 
-<div class="callout opinion">
+Pi's flexibility is a design choice, and it is valuable when you want control over the agent environment: which tools the model sees, what happens around every call, how a session is stored and compacted, how the agent is driven from outside. The architecture in this part shows that the control is real and documented, down to individual hooks and events. It also shows that none of it comes with a policy chosen for you. The loop doesn't decide what recovery means, the hooks don't decide what is allowed, and the tool set doesn't decide how work is delegated.
 
-<span class="label opinion">Opinion</span> Use Pi when you want more than an agent that works out of the box. Use it when you want to understand how the agent operates, reshape its workflow, extend its capabilities, and take responsibility for the system you build around it. The sections above are what that responsibility looked like in my experiments: designing delegation, making it observable, deciding what recovery means when a run fails, deciding where the permission boundary sits, and fitting the agent into a project's workflow.
+That leaves a question the architecture alone can't answer: **what additional engineering work turns that flexibility into a system that is reliable, secure and maintainable?** [Part 2: From Flexibility to Responsibility — Building Reliable Workflows](/blog/pi-agent-freedom-vs-convenience-part-2/) takes it up through orchestration and observability, recovery when execution stops, the difference between trust, permissions and isolation, and a decision framework for choosing between Pi and an integrated coding agent.
 
-If your priority is getting work done with as little setup and maintenance as possible, a more integrated product may be the better choice. There's nothing inherently wrong with choosing convenience over control, and nothing inherently better about building everything yourself.
+<div class="callout">
 
-</div>
-
-Working with Pi made me more aware of a trade-off that's easy to overlook: **freedom transfers responsibility.** The more control you have over a system, the more decisions you need to make to turn that control into a reliable working experience. Pi's own documentation says as much about permissions: it tells you to bring the container, and documents four ways to do it.
-
-So the question isn't whether Pi is better than other coding agents. I haven't tested that, and this article makes no claim about it. The question is whether the freedom Pi offers is worth the additional work you're willing to take on. I opened with a powerful model in a thin environment. The thin environment is the offer, and the work of filling it in is the price.
-
-**Freedom gives you the ability to build the system you want. Convenience lets you spend less time building the system in the first place.**
-
-<div class="callout opinion">
-
-<span class="label opinion">Opinion</span> I now evaluate a coding agent by more than the quality of the code it generates. I also look at where its permission boundary sits, how it fails and recovers, whether I can see what it's doing, and what it costs to fit it into a project's workflow. Those are the questions the sections above kept returning to.
+**Next: Part 2 of 2.** [Pi Agent: From Flexibility to Responsibility — Building Reliable Workflows](/blog/pi-agent-freedom-vs-convenience-part-2/)
 
 </div>
 
@@ -651,8 +450,8 @@ So the question isn't whether Pi is better than other coding agents. I haven't t
 
 **Pi: official docs and source**
 
-- [pi.dev](https://pi.dev), [Sessions](https://pi.dev/docs/latest/sessions), [Skills](https://pi.dev/docs/latest/skills), [Packages](https://pi.dev/docs/latest/packages), [Extensions](https://pi.dev/docs/latest/extensions), [SDK](https://pi.dev/docs/latest/sdk), [How Pi works](https://pi.dev/docs/latest/how-pi-works), [Security](https://pi.dev/docs/latest/security), [Configuration](https://pi.dev/docs/latest/configuration), [Settings](https://pi.dev/docs/latest/settings), [Compaction](https://pi.dev/docs/latest/compaction), [CLI](https://pi.dev/docs/latest/cli), [Code Mode](https://pi.dev/docs/latest/codemode), [Usage](https://pi.dev/docs/latest/usage), [RPC](https://pi.dev/docs/latest/rpc), [Containerization](https://pi.dev/docs/latest/containerization), [MCP](https://pi.dev/docs/latest/mcp), [Quickstart](https://pi.dev/docs/latest/quickstart)
-- [earendil-works/pi](https://github.com/earendil-works/pi): [`extensions.md`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md), [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools) (including [`read.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/read.ts)), [`agent-loop.ts`](https://github.com/earendil-works/pi/blob/main/packages/agent/src/agent-loop.ts), [`types.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/extensions/types.ts), [`hello.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/hello.ts), [`tool-override.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/tool-override.ts), [`path-utils.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/path-utils.ts), [`utils/paths.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/utils/paths.ts)
+- [pi.dev](https://pi.dev), [Sessions](https://pi.dev/docs/latest/sessions), [Skills](https://pi.dev/docs/latest/skills), [Packages](https://pi.dev/docs/latest/packages), [Extensions](https://pi.dev/docs/latest/extensions), [SDK](https://pi.dev/docs/latest/sdk), [How Pi works](https://pi.dev/docs/latest/how-pi-works), [Security](https://pi.dev/docs/latest/security), [Settings](https://pi.dev/docs/latest/settings), [Compaction](https://pi.dev/docs/latest/compaction), [CLI](https://pi.dev/docs/latest/cli), [Code Mode](https://pi.dev/docs/latest/codemode), [Usage](https://pi.dev/docs/latest/usage), [RPC](https://pi.dev/docs/latest/rpc), [MCP](https://pi.dev/docs/latest/mcp), [Quickstart](https://pi.dev/docs/latest/quickstart)
+- [earendil-works/pi](https://github.com/earendil-works/pi): [`src/core/tools`](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/src/core/tools), [`agent-loop.ts`](https://github.com/earendil-works/pi/blob/main/packages/agent/src/agent-loop.ts), [`types.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/extensions/types.ts), [`hello.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/hello.ts), [`tool-override.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/tool-override.ts)
 - npm registry metadata (`npm view`) for `@earendil-works/pi-coding-agent` and the deprecated `@mariozechner/pi-coding-agent`, checked October 20, 2026
 
 **Pi: authors' posts**
@@ -664,4 +463,3 @@ So the question isn't whether Pi is better than other coding agents. I haven't t
 
 - Claude Code, [Tools reference](https://code.claude.com/docs/en/tools-reference), [MCP (including tool search)](https://code.claude.com/docs/en/mcp), [Skills](https://code.claude.com/docs/en/skills), [Configure permissions](https://code.claude.com/docs/en/permissions) and [Permission modes](https://code.claude.com/docs/en/permission-modes)
 - OpenAI Codex, [Customization](https://learn.chatgpt.com/docs/customization/overview), [MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security), and the open-source tool handlers in [openai/codex](https://github.com/openai/codex/tree/main/codex-rs/core/src/tools) (commit `e18a20d`)
-- Docker, [Docker security](https://docs.docker.com/engine/security/)

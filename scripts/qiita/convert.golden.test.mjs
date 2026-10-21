@@ -18,13 +18,13 @@ test('real Japanese Pi article converts cleanly', { skip: !existsSync(builtFile)
     builtHtml: readFileSync(builtFile, 'utf8'),
     pageExists: makePageExists(DIST_DIR),
   });
-  assert.equal(assetUrls.length, 12);
-  assert.ok(assetUrls.every((u) => /^https:\/\/hdquangsgt\.github\.io\/_astro\/.+\.svg$/.test(u)));
+  assert.equal(assetUrls.length, 8);
+  assert.ok(assetUrls.every((u) => /^https:\/\/hdquangsgt\.github\.io\/diagrams\/[a-z-]+\.svg$/.test(u)));
   assert.doesNotMatch(markdown, /!\[[^\]]*\]\([^)]*\.svg\)/);
   assert.doesNotMatch(markdown, /<div|<span/);
-  assert.equal((markdown.match(/^:::note info$/gm) ?? []).length, 50);
-  assert.equal((markdown.match(/^:::$/gm) ?? []).length, 50);
-  assert.equal((markdown.match(/^> \[図を開く \(SVG\)\]/gm) ?? []).length, 12);
+  assert.equal((markdown.match(/^:::note info$/gm) ?? []).length, 33);
+  assert.equal((markdown.match(/^:::$/gm) ?? []).length, 33);
+  assert.equal((markdown.match(/^> \[図を開く \(SVG\)\]/gm) ?? []).length, 8);
   assert.ok(markdown.endsWith(`元記事: ${SITE_URL}/ja/blog/${SLUG}/\n`));
   assert.deepEqual(warnings, []);
 });
