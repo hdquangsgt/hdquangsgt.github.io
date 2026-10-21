@@ -138,3 +138,12 @@ test('errors never print the token', async () => {
   assert.equal(await main(['--apply'], { QIITA_TOKEN: 'tok-secret' }, p.deps), 1);
   assert.doesNotMatch(p.errs.join('\n'), /tok-secret/);
 });
+
+test('a local --apply that changes the map reminds you to commit it (duplicate guard)', async () => {
+  const p = project();
+  assert.equal(await main(['--apply'], { QIITA_TOKEN: 'tok' }, p.deps), 0);
+  assert.match(p.logs.join('\n'), /commit and push scripts\/qiita-map\.json/);
+  const ci = project();
+  assert.equal(await main(['--apply'], { QIITA_TOKEN: 'tok', GITHUB_OUTPUT: path.join(ci.root, 'out') }, ci.deps), 0);
+  assert.doesNotMatch(ci.logs.join('\n'), /commit and push/);
+});

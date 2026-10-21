@@ -135,6 +135,9 @@ export async function main(argv, env, overrides = {}) {
     await preflightAssets(prepared.flatMap((p) => p.assetUrls), deps.fetchImpl);
     const results = await runSync({ prepared, map, mapPath: deps.mapPath, client, log: deps.log });
     results.forEach((r) => deps.log(`${r.slug}: ${r.action} ${r.url ?? ''}`.trim()));
+    if (!env.GITHUB_OUTPUT && serializeMap(loadMap(deps.mapPath)) !== before) {
+      deps.log('note: commit and push scripts/qiita-map.json now; a workflow run without it would create duplicates');
+    }
     return 0;
   } catch (e) {
     deps.err(`error: ${redact(e.message, token)}`);

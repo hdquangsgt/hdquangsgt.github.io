@@ -43,8 +43,20 @@ jobs:
       - name: Plan (no network, no token)
         run: npm run qiita:sync
 
+  # A real run elsewhere would commit the map to that branch and leave main's map empty, so the next
+  # run on main would create a duplicate. Fail loudly instead of silently skipping.
+  wrong-branch:
+    if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: |
+          echo "::error::Real Qiita runs are only allowed from main (this is ${GITHUB_REF}). Tick 'Dry run' or run from main."
+          exit 1
+
   apply:
-    if: ${{ !inputs.dry_run }}
+    if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: qiita
     permissions:

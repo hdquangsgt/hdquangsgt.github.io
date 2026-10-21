@@ -118,6 +118,8 @@ When you fix one, delete its row and update the affected document.
 | Switch an SVG fallback to hotlinked images | add `--svg hotlink` (only after the probe shows Qiita renders them) |
 | Unpublish | set `qiita.publish: false`, merge, then `--apply --unpublish <slug> --confirm <slug>` (workflow inputs `unpublish_slug` and `confirm_slug`) |
 
+Real workflow runs are only allowed from `main` (anywhere else the run fails with an error), so the map is always committed to the branch the next run will read. A local `--apply` run (and any `--recover`, which the workflow has no inputs for) must be followed immediately by committing and pushing `scripts/qiita-map.json`, and must never overlap with a workflow run; forgetting either can create a duplicate Qiita item. Also restrict the `qiita` Environment's deployment branches to `main` in the repository settings.
+
 Images cannot be uploaded through the API, so each diagram becomes a text caption plus a link to the SVG on the blog; the site must already be deployed (the sync checks every asset URL first). Callouts become `:::note info`; any HTML Qiita might mangle stops the run instead of being dropped.
 
 ### Recovery
