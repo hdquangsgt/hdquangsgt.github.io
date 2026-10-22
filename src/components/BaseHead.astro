@@ -16,6 +16,8 @@ export interface Props {
   noindex?: boolean;
   /** URL of this page in each language that has a version, for hreflang links. */
   alternates?: Partial<Record<Lang, string>>;
+  /** Canonical path when this page is a secondary view of another URL (defaults to the page's own path). */
+  canonicalPath?: string;
 }
 
 const lang = langFromUrl(Astro.url);
@@ -31,11 +33,12 @@ const {
   tags = [],
   noindex = false,
   alternates = {},
+  canonicalPath,
 } = Astro.props;
 
 const fullTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${t.siteDescription}`;
 // Astro.site is the production domain from astro.config.mjs, so canonical URLs never point at localhost.
-const canonical = new URL(Astro.url.pathname, Astro.site);
+const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const imageUrl = new URL(image, Astro.site);
 
 const jsonLd =

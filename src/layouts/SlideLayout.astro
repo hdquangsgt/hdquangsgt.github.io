@@ -1,0 +1,31 @@
+---
+// The shell for slide-based articles (frontmatter `slides: true`): a full-viewport presentation app.
+// It is deliberately separate from BaseLayout: no site header or footer, no `.wrap` column, no table of
+// contents. It shares only the document head (SEO, theme and font preferences) and the design tokens.
+import BaseHead from '../components/BaseHead.astro';
+import '../styles/slide-content.css';
+import '../styles/slides.css';
+import { langFromUrl, LOCALE_META, useTranslations } from '../i18n';
+
+type Props = import('../components/BaseHead.astro').Props;
+
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<!doctype html>
+<html lang={LOCALE_META[lang].htmlLang}>
+  <head>
+    <BaseHead {...Astro.props} />
+    <script is:inline>
+      // Take over the viewport only when JavaScript can run the deck. If the deck script never reports
+      // ready (blocked or failed), give the page back after 3 seconds so it scrolls like a normal article.
+      document.documentElement.classList.add('deck-app');
+      window.__deckGuard = setTimeout(function () { document.documentElement.classList.remove('deck-app'); }, 3000);
+    </script>
+  </head>
+  <body class="deck-body">
+    <a class="skip-link" href="#main">{t.skipLink}</a>
+    <slot />
+  </body>
+</html>

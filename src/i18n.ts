@@ -88,6 +88,27 @@ interface Strings {
     copied: string;
     copyFailed: string;
     copyLabel: string;
+    /** Slide-based articles (frontmatter `slides: true`). */
+    slides: {
+      label: string;
+      previous: string;
+      next: string;
+      /** "03 / 18" */
+      counter: (n: number, total: number) => string;
+      /** Spoken when the slide changes. */
+      announce: (n: number | string, total: number | string, title: string) => string;
+      progress: string;
+      showArticle: string;
+      showSlides: string;
+      /** Keyboard help shown in the slide menu. */
+      keys: string;
+      exit: string;
+      menu: string;
+      menuTitle: string;
+      close: string;
+      fullscreen: string;
+      exitFullscreen: string;
+    };
   };
   articles: Plural;
   categoryDescription: (name: string) => string;
@@ -163,6 +184,23 @@ export const UI: Record<Lang, Strings> = {
       copied: 'Copied',
       copyFailed: 'Copy failed',
       copyLabel: 'Copy code to clipboard',
+      slides: {
+        label: 'Slides',
+        previous: 'Previous',
+        next: 'Next',
+        counter: (n, total) => `${String(n).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
+        announce: (n, total, title) => `Slide ${n} of ${total}: ${title}`,
+        progress: 'Slide progress',
+        showArticle: 'Read as full article',
+        showSlides: 'View as slides',
+        keys: 'Keyboard: left and right arrows or Page Up and Page Down move between slides, Home and End jump to the first and last, F toggles full screen.',
+        exit: 'Exit',
+        menu: 'Slides',
+        menuTitle: 'All slides',
+        close: 'Close',
+        fullscreen: 'Full screen',
+        exitFullscreen: 'Exit full screen',
+      },
     },
     articles: (n) => `${n} ${n === 1 ? 'article' : 'articles'}`,
     categoryDescription: (name) => `Articles in the ${name} category.`,
@@ -262,6 +300,23 @@ export const UI: Record<Lang, Strings> = {
       copied: 'Đã sao chép',
       copyFailed: 'Sao chép thất bại',
       copyLabel: 'Sao chép mã vào bộ nhớ tạm',
+      slides: {
+        label: 'Trang trình bày',
+        previous: 'Trước',
+        next: 'Sau',
+        counter: (n, total) => `${String(n).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
+        announce: (n, total, title) => `Trang ${n} trên ${total}: ${title}`,
+        progress: 'Tiến độ trình bày',
+        showArticle: 'Đọc toàn bộ bài viết',
+        showSlides: 'Xem dạng trình bày',
+        keys: 'Bàn phím: mũi tên trái/phải hoặc Page Up/Page Down để chuyển trang, Home và End để về trang đầu và cuối, F để bật tắt toàn màn hình.',
+        exit: 'Thoát',
+        menu: 'Trang',
+        menuTitle: 'Tất cả trang',
+        close: 'Đóng',
+        fullscreen: 'Toàn màn hình',
+        exitFullscreen: 'Thoát toàn màn hình',
+      },
     },
     articles: (n) => `${n} bài viết`,
     categoryDescription: (name) => `Các bài viết trong danh mục ${name}.`,
@@ -360,6 +415,23 @@ export const UI: Record<Lang, Strings> = {
       copied: 'コピーしました',
       copyFailed: 'コピーに失敗しました',
       copyLabel: 'コードをクリップボードにコピー',
+      slides: {
+        label: 'スライド',
+        previous: '前へ',
+        next: '次へ',
+        counter: (n, total) => `${String(n).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
+        announce: (n, total, title) => `スライド ${n} / ${total}: ${title}`,
+        progress: 'スライドの進行状況',
+        showArticle: '記事全体を読む',
+        showSlides: 'スライドで見る',
+        keys: 'キーボード: 左右の矢印または Page Up / Page Down でスライド移動、Home / End で最初と最後、F で全画面の切り替え。',
+        exit: '終了',
+        menu: 'スライド',
+        menuTitle: 'すべてのスライド',
+        close: '閉じる',
+        fullscreen: '全画面',
+        exitFullscreen: '全画面を終了',
+      },
     },
     articles: (n) => `${n}件の記事`,
     categoryDescription: (name) => `カテゴリー「${name}」の記事。`,

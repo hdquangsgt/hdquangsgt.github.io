@@ -1,0 +1,449 @@
+/* ==========================================================================
+   Slide viewer: a presentation app for articles with `slides: true`.
+   Imported by layouts/SlideLayout.astro. Astro also ships it with the article route's CSS, so every rule is
+   scoped under `.deck` / `html.deck-app` / `.deck-body` (classes only slide pages have) and is inert on regular articles, and it uses the design tokens from global.css.
+
+   Structure:  .deck > .deck-top (title, tools) + .deck-stage (the slide) + .deck-bottom (navigation)
+   States:     html.deck-app           JavaScript will run the deck: it fills the viewport, the stage scrolls
+               .deck[data-mode='slides']  always set; the full article is a separate page in the standard layout
+               no `deck-app` class     no JavaScript: a plain long article in the same shell
+   ========================================================================== */
+
+.deck-body {
+  margin: 0;
+}
+
+/* ---------- Shell ---------- */
+html.deck-app,
+html.deck-app .deck-body {
+  height: 100%;
+  overflow: hidden;
+}
+
+html.deck-app .deck {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100vh; /* fallback */
+  height: 100dvh; /* the visible viewport on phones, excluding browser toolbars */
+}
+
+/* Hide the ungrouped article for an instant while the script builds the slides. */
+html.deck-app .deck-prose:not([data-deck-ready]) {
+  visibility: hidden;
+}
+
+.deck-stage {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(1rem, 3vw, 3rem);
+}
+
+.deck-stage:focus {
+  outline: none; /* focused only by the skip link; the stage is not an interactive control */
+}
+
+.deck-prose {
+  max-width: none;
+}
+
+/* ---------- Top bar ---------- */
+.deck-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) clamp(var(--space-3), 3vw, 3rem);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.deck-exit {
+  flex: none;
+  padding-block: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.deck-exit:hover {
+  color: var(--color-accent);
+}
+
+.deck-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-tools {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.deck-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 2.5rem;
+  text-decoration: none;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.deck-button[hidden] {
+  display: none;
+}
+
+.deck-button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.deck-button[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.deck-button[aria-disabled='true'] {
+  color: var(--color-text-muted);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.deck-button[aria-disabled='true']:hover {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Bottom bar ---------- */
+.deck-bottom {
+  position: relative;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.deck-bottom[hidden] {
+  display: none;
+}
+
+.deck-progress {
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 4px;
+  background: var(--color-border);
+}
+
+.deck-progress > span {
+  display: block;
+  width: var(--deck-progress, 0%);
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.deck-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3) clamp(var(--space-3), 3vw, 3rem) var(--space-2);
+}
+
+.deck-step {
+  min-width: 6.5rem;
+  min-height: 2.75rem;
+}
+
+.deck-counter {
+  min-width: 5rem;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-menu-button {
+  margin-left: var(--space-2);
+}
+
+@media (min-width: 48rem) {
+  .deck-menu-button {
+    position: absolute;
+    right: clamp(var(--space-3), 3vw, 3rem);
+    margin-left: 0;
+  }
+}
+
+/* ---------- Slide menu (replaces a table of contents, without taking any width) ---------- */
+.deck-menu {
+  width: min(32rem, calc(100vw - 4rem));
+  max-height: calc(100dvh - 8rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.deck-menu[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-menu::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.deck-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.deck-menu-head h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.deck-menu-list {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  list-style: none;
+  overflow-y: auto;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.deck-menu-list li {
+  padding-block: 0;
+}
+
+.deck-menu-list a {
+  display: block;
+  padding: 0.25rem var(--space-2);
+  border-left: 3px solid transparent;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.deck-menu-list a:hover {
+  background: var(--color-surface);
+}
+
+.deck-menu-list a[aria-current='location'] {
+  border-left-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.deck-menu-note {
+  margin: 0;
+  padding: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* ---------- Slide ---------- */
+.deck .slide {
+  max-width: 84rem;
+  margin-inline: auto;
+}
+
+.deck .slide[hidden] {
+  display: none;
+}
+
+.deck .slide-head {
+  margin-bottom: var(--space-4);
+}
+
+.deck .slide-kicker {
+  margin-bottom: var(--space-2);
+}
+
+.deck .slide-kicker[data-n]::before {
+  content: attr(data-n) ' · ';
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.deck .prose .slide-head h2 {
+  max-width: 34ch;
+  margin: 0;
+  font-size: clamp(1.375rem, 1rem + 1.2vw, 1.875rem);
+  line-height: var(--leading-heading);
+  text-wrap: balance;
+}
+
+.deck .slide-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
+}
+
+.deck .slide-text,
+.deck .slide-visual {
+  min-width: 0;
+}
+
+.deck .slide-text {
+  font-size: clamp(1.0625rem, 0.95rem + 0.35vw, 1.25rem);
+  max-width: 62rem;
+}
+
+.deck .slide-text > :first-child {
+  margin-top: 0;
+}
+
+.deck .slide-text > :last-child {
+  margin-bottom: 0;
+}
+
+.deck .slide-text > p,
+.deck .slide-text > ul,
+.deck .slide-text > ol {
+  margin-bottom: var(--space-3);
+}
+
+.deck .slide-text > table {
+  display: block;
+  overflow-x: auto;
+  margin: 0 0 var(--space-3);
+}
+
+.deck .slide-text > .callout {
+  margin: var(--space-3) 0 0;
+}
+
+.deck .slide-visual .figure {
+  margin: 0;
+}
+
+.deck .slide-visual .figure + .figure {
+  margin-top: var(--space-4);
+}
+
+/* One slide at a time: text beside its diagram on wide screens, stacked below that. */
+@media (min-width: 62rem) {
+  .deck[data-mode='slides'] .slide-body[data-visual='true'] {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+
+/* The reading note belongs to the standard article layout only. */
+.deck .article-only {
+  display: none;
+}
+
+/* Without JavaScript the article is not grouped into slides: the same single reading column. */
+html:not(.deck-app) .deck-prose {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+html:not(.deck-app) .deck-stage {
+  padding-top: var(--space-5);
+}
+
+/* ---------- Phones and small tablets ---------- */
+@media (max-width: 40rem) {
+  /* Diagrams keep a wider minimum than other figures so their labels stay readable; the box scrolls sideways. */
+  .deck .figure-scroll-wide svg.diagram {
+    min-width: 40rem;
+  }
+
+  .deck-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .deck-top {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 0;
+  }
+
+  .deck-tools {
+    flex: 1 1 auto;
+  }
+
+  /* Phones already use the whole screen. */
+  .deck-button[data-deck-fullscreen] {
+    display: none;
+  }
+
+  .deck-step {
+    min-width: 3rem;
+    padding-inline: var(--space-2);
+  }
+
+  .deck-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .deck-controls {
+    gap: var(--space-2);
+  }
+}
+
+/* ---------- Motion (only when the reader has not asked for less) ---------- */
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Dashes travel along loop arrows in diagrams. */
+  .deck svg.diagram .loop {
+    animation: dash-flow 1.2s linear infinite;
+  }
+
+  .deck[data-mode='slides'] .slide:not([hidden]) {
+    animation: slide-in 0.18s ease-out;
+  }
+
+  .deck-progress > span {
+    transition: width 0.2s ease;
+  }
+}

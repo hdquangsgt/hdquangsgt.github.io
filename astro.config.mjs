@@ -40,6 +40,8 @@ export default defineConfig({
   ],
   integrations: [
     sitemap({
+      // `<slug>/article/` is the standard-layout view of a slide article; its canonical page is the presentation.
+      filter: (page) => !/\/blog\/[^/]+\/article\/$/.test(page),
       i18n: { defaultLocale: 'en', locales: { en: 'en-US', vi: 'vi-VN', ja: 'ja-JP' } },
     }),
   ],

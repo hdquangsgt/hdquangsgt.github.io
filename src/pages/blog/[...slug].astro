@@ -1,10 +1,13 @@
 ---
 import ArticleView from '../../views/ArticleView.astro';
+import SlideView from '../../views/SlideView.astro';
 import { articlePaths } from '../../utils/paths';
 
 export const getStaticPaths = () => articlePaths('en');
 
 type Props = import('../../views/ArticleView.astro').Props;
+// Slide articles (`slides: true`) get their own layout; see views/SlideView.astro.
+const View = Astro.props.post.data.slides && !Astro.props.standard ? SlideView : ArticleView;
 ---
 
-<ArticleView {...Astro.props} />
+<View {...Astro.props} />

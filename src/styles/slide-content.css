@@ -1,0 +1,92 @@
+/* Content blocks used by slide-based articles (frontmatter `slides: true`), in both the presentation (SlideLayout)
+   and the standard article layout (ArticleView): they only matter where an article uses these classes. */
+
+/* Part label under a slide headline. In the presentation it gets a number (see slides.css); in the standard layout it
+   is a small muted label. */
+.slide-kicker {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:lang(ja) .slide-kicker {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.takeaway {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface);
+}
+
+.takeaway > :last-child {
+  margin-bottom: 0;
+}
+
+.checklist {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.checklist ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: check;
+}
+
+.checklist li {
+  position: relative;
+  min-height: 2rem;
+  padding-left: 2.75rem;
+  counter-increment: check;
+}
+
+.checklist li + li {
+  margin-top: var(--space-3);
+}
+
+.checklist li::before {
+  content: counter(check);
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.checklist li > strong,
+.checklist li > span {
+  display: block;
+}
+
+.checklist li > span {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.pull-question {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--color-accent);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: 1.4;
+}

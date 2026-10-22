@@ -3,8 +3,10 @@ import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostList from '../components/PostList.astro';
 import PostMeta from '../components/PostMeta.astro';
+import ProseEnhancements from '../components/ProseEnhancements.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import TagList from '../components/TagList.astro';
+import '../styles/slide-content.css';
 import { LOCALE_META, localizePath, useTranslations, type Lang } from '../i18n';
 import { categoryUrl, postLang, postUrl, relatedPosts, type Post } from '../utils/posts';
 
@@ -16,9 +18,11 @@ export interface Props {
   posts: Post[];
   /** URL of each language version of this post, including this one. */
   alternates: Partial<Record<Lang, string>>;
+  /** Slide articles only: render the standard layout at `<slug>/article/` instead of the presentation. */
+  standard?: boolean;
 }
 
-const { post, newer, older, posts, alternates } = Astro.props;
+const { post, newer, older, posts, alternates, standard = false } = Astro.props;
 const lang = postLang(post);
 const t = useTranslations(lang);
 const { Content, headings } = await render(post);
@@ -26,7 +30,9 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 const related = relatedPosts(post, posts);
 const otherLanguages = (Object.entries(alternates) as [Lang, string][]).filter(([l]) => l !== lang);
 const blogHome = localizePath(lang, '/blog/');
-const { title, description, pubDate, updatedDate, category, tags, coverImage, draft } = post.data;
+const { title, description, pubDate, updatedDate, category, tags, coverImage, draft, slides } = post.data;
+// The presentation is the canonical page of a slide article; this layout is its full-article view.
+const slidesHref = slides ? postUrl(post) : undefined;
 ---
 
 <BaseLayout
@@ -38,6 +44,7 @@ const { title, description, pubDate, updatedDate, category, tags, coverImage, dr
   tags={tags}
   image={coverImage?.src.src}
   noindex={draft}
+  canonicalPath={standard ? slidesHref : undefined}
   alternates={alternates}
   width="article"
 >
@@ -45,6 +52,7 @@ const { title, description, pubDate, updatedDate, category, tags, coverImage, dr
     <header class="article-header">
       <div class="article-topbar">
         <a href={blogHome}>{t.post.allArticles}</a>
+        {slidesHref && <a href={slidesHref}>{t.post.slides.showSlides} →</a>}
         {
           otherLanguages.length > 0 && (
             <p class="post-translations">
@@ -111,98 +119,4 @@ const { title, description, pubDate, updatedDate, category, tags, coverImage, dr
   </article>
 </BaseLayout>
 
-<script>
-  // Wide blocks get their own scroll container, so they never widen the page:
-  //   - tables are wrapped in `.table-wrap` (the <table> stays a real table for assistive technology);
-  //   - an image alone in a paragraph becomes a <figure>, captioned by its Markdown title (![alt](src "caption")).
-  // Without JavaScript the same content still works: see the `.prose > table` fallback in global.css.
-  {
-    const prose = document.querySelector<HTMLElement>('.prose[data-copy]');
-    const scrollBox = (className: string) => {
-      const box = document.createElement('div');
-      box.className = className;
-      box.tabIndex = 0; // keyboard users can scroll it
-      return box;
-    };
-    for (const table of prose?.querySelectorAll<HTMLTableElement>(':scope > table') ?? []) {
-      const wrap = scrollBox('table-wrap');
-      table.replaceWith(wrap);
-      wrap.append(table);
-    }
-    for (const p of prose?.querySelectorAll<HTMLParagraphElement>(':scope > p') ?? []) {
-      const img = p.children.length === 1 && p.children[0] instanceof HTMLImageElement ? p.children[0] : undefined;
-      if (!img || p.textContent?.trim()) continue;
-      const figure = document.createElement('figure');
-      figure.className = 'figure';
-      const box = scrollBox('figure-scroll');
-      // Large images (diagrams, screenshots) keep a readable minimum width on narrow screens and scroll;
-      // small ones just scale. Judged by the intrinsic width Astro writes on the <img>.
-      if (Number(img.getAttribute('width')) >= 480) box.classList.add('figure-scroll-wide');
-      const caption = img.title;
-      img.removeAttribute('title');
-      box.append(img);
-      figure.append(box);
-      if (caption) {
-        const figcaption = document.createElement('figcaption');
-        figcaption.textContent = caption;
-        figure.append(figcaption);
-      }
-      p.replaceWith(figure);
-    }
-  }
-</script>
-
-<script>
-  // Code blocks: a header with the language (only when the Markdown fence names one) and a copy button.
-  // Button labels come from data attributes so they follow the page language.
-  const prose = document.querySelector<HTMLElement>('.prose[data-copy]');
-  if (prose) {
-    const { copy = 'Copy', copied = 'Copied', copyFailed = 'Copy failed', copyLabel = 'Copy code' } = prose.dataset;
-    const canCopy = Boolean(navigator.clipboard);
-    for (const pre of prose.querySelectorAll<HTMLPreElement>('pre')) {
-      const language = pre.dataset.language;
-      const hasLanguage = Boolean(language) && !['text', 'plaintext', 'txt'].includes(language ?? '');
-      if (!canCopy && !hasLanguage) continue;
-
-      const wrapper = document.createElement('div');
-      wrapper.className = 'code-block';
-      pre.replaceWith(wrapper);
-
-      const head = document.createElement('div');
-      head.className = 'code-head';
-      const label = document.createElement('span');
-      label.className = 'code-lang';
-      label.textContent = hasLanguage ? (language ?? '') : '';
-      head.append(label);
-
-      if (canCopy) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'copy-button';
-        button.textContent = copy;
-        button.setAttribute('aria-label', copyLabel);
-        const status = document.createElement('span');
-        status.className = 'visually-hidden';
-        status.setAttribute('role', 'status');
-        button.addEventListener('click', async () => {
-          let ok = true;
-          try {
-            await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
-          } catch {
-            ok = false;
-          }
-          button.textContent = ok ? copied : copyFailed;
-          button.dataset.state = ok ? 'copied' : 'failed';
-          status.textContent = ok ? copied : copyFailed;
-          setTimeout(() => {
-            button.textContent = copy;
-            delete button.dataset.state;
-            status.textContent = '';
-          }, 2000);
-        });
-        head.append(button, status);
-      }
-      wrapper.append(head, pre);
-    }
-  }
-</script>
+<ProseEnhancements />

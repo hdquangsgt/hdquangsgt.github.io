@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="540" viewBox="0 0 720 540" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.4; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.8; }
+    .obs { fill: #edf3fc; stroke: #1f5fbf; stroke-width: 1.8; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.8; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.8; }
+    .hyp { fill: none; stroke: #8a9099; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .zone { fill: none; stroke: #8a9099; stroke-width: 1.3; stroke-dasharray: 3 4; }
+    .band { fill: #f1efe8; stroke: #c9c5b8; stroke-width: 1; }
+    .band2 { fill: #ecf1f8; stroke: #b9c6da; stroke-width: 1; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .good { fill: #0b6b52; }
+    .bad { fill: #a33f1c; }
+    .h { font-weight: 700; }
+    .l { font-size: 18px; }
+    .s { font-size: 13px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.8; fill: none; }
+    .thick { stroke: #0b6b52; stroke-width: 4; fill: none; }
+    .thin { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+    .flow { stroke: #0b6b52; stroke-width: 2.4; fill: none; }
+    .loop { stroke: #0b6b52; stroke-width: 2.4; fill: none; stroke-dasharray: 7 5; }
+    .redline { stroke: #a33f1c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    .arrowg { fill: #0b6b52; }
+    .arrowr { fill: #a33f1c; }
+    .dot { fill: #0b6b52; }
+    .dotm { fill: var(--color-text-muted, #595f67); }
+    .ring { fill: var(--color-bg, #ffffff); stroke: var(--color-text, #1d1f22); stroke-width: 2; }
+    .sq { fill: var(--color-text, #1d1f22); }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .obs { fill: #17233a; stroke: #8ab6ff; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .hyp { stroke: #8a929b; }
+      .zone { stroke: #6b737c; }
+      .band { fill: #1b1c19; stroke: #3a3a35; }
+      .band2 { fill: #171d27; stroke: #2d3a50; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .good { fill: #6fd3ae; }
+      .bad { fill: #f3a184; }
+      .thick { stroke: #6fd3ae; }
+      .thin, .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .flow { stroke: #6fd3ae; }
+      .loop { stroke: #6fd3ae; }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+      .arrowg { fill: #6fd3ae; }
+      .arrowr { fill: #f3a184; }
+      .dot { fill: #6fd3ae; }
+      .dotm { fill: var(--color-text-muted, #a2a9b1); }
+      .ring { fill: var(--color-bg, #121416); stroke: var(--color-text, #e4e6e8); }
+      .sq { fill: var(--color-text, #e4e6e8); }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowg"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowr"/></marker>
+  </defs>
+  <rect class="bg" width="720" height="540"/>
+  <rect class="os" x="20" y="10" width="680" height="38" rx="6"/>
+  <text x="360" y="34" text-anchor="middle" class="t h">TEMPLATE · no measured data · replace every "—" with your own experiment results</text>
+  <rect class="box" x="20" y="66" width="216" height="80" rx="8"/>
+  <text x="34" y="92" text-anchor="start" class="m s">Task success rate</text>
+  <text x="34" y="126" text-anchor="start" class="t h l">— %</text>
+  <rect class="box" x="252" y="66" width="216" height="80" rx="8"/>
+  <text x="266" y="92" text-anchor="start" class="m s">Verified acceptance rate</text>
+  <text x="266" y="126" text-anchor="start" class="t h l">— %</text>
+  <rect class="box" x="484" y="66" width="216" height="80" rx="8"/>
+  <text x="498" y="92" text-anchor="start" class="m s">Test pass rate</text>
+  <text x="498" y="126" text-anchor="start" class="t h l">— %</text>
+  <rect class="box" x="20" y="162" width="216" height="80" rx="8"/>
+  <text x="34" y="188" text-anchor="start" class="m s">Latency P50</text>
+  <text x="34" y="222" text-anchor="start" class="t h l">— s</text>
+  <rect class="box" x="252" y="162" width="216" height="80" rx="8"/>
+  <text x="266" y="188" text-anchor="start" class="m s">Latency P95</text>
+  <text x="266" y="222" text-anchor="start" class="t h l">— s</text>
+  <rect class="box" x="484" y="162" width="216" height="80" rx="8"/>
+  <text x="498" y="188" text-anchor="start" class="m s">Cost per successful task</text>
+  <text x="498" y="222" text-anchor="start" class="t h l">$ —</text>
+  <rect class="box" x="20" y="258" width="216" height="80" rx="8"/>
+  <text x="34" y="284" text-anchor="start" class="m s">Retries per task</text>
+  <text x="34" y="318" text-anchor="start" class="t h l">—</text>
+  <rect class="box" x="252" y="258" width="216" height="80" rx="8"/>
+  <text x="266" y="284" text-anchor="start" class="m s">Tool calls per task</text>
+  <text x="266" y="318" text-anchor="start" class="t h l">—</text>
+  <rect class="box" x="484" y="258" width="216" height="80" rx="8"/>
+  <text x="498" y="284" text-anchor="start" class="m s">Agent wall-clock time</text>
+  <text x="498" y="318" text-anchor="start" class="t h l">— s</text>
+  <text x="20" y="372" text-anchor="start" class="t h">Success vs. cost, one marker per effort setting</text>
+  <path class="thin" d="M50 390 L50 500"/>
+  <path class="thin" d="M50 500 L330 500"/>
+  <text x="58" y="404" text-anchor="start" class="m s">verified success</text>
+  <text x="330" y="520" text-anchor="end" class="m s">cost per successful task</text>
+  <circle class="ring" cx="120" cy="450" r="9" stroke-dasharray="3 3"/>
+  <rect class="hyp" x="192" y="434" width="16" height="16"/>
+  <circle class="ring" cx="270" cy="412" r="9" stroke-dasharray="3 3"/>
+  <text x="90" y="478" text-anchor="start" class="m s">placeholder positions, not data</text>
+  <text x="370" y="392" text-anchor="start" class="m s">Protocol checklist</text>
+  <text x="370" y="410" text-anchor="start" class="m s">• Settings: only those the model supports</text>
+  <text x="370" y="428" text-anchor="start" class="m s">• Same tasks, same tools, same budget</text>
+  <text x="370" y="446" text-anchor="start" class="m s">• N repeated trials per task and setting</text>
+  <text x="370" y="464" text-anchor="start" class="m s">• Report spread (P50 / P95), not one run</text>
+  <text x="370" y="482" text-anchor="start" class="m s">• Judge success by checks, not answer length</text>
+</svg>

@@ -37,11 +37,15 @@ async function postsByLang() {
 export async function articlePaths(lang: Lang) {
   const { all, byLang } = await postsByLang();
   const posts = byLang(lang);
-  return posts.map((post, i) => ({
-    params: { slug: postSlug(post) },
+  return posts.flatMap((post, i) => {
     // Posts are sorted newest first, so the next index is the older article.
-    props: { post, newer: posts[i - 1], older: posts[i + 1], posts, alternates: postTranslations(post, all) },
-  }));
+    const props = { post, newer: posts[i - 1], older: posts[i + 1], posts, alternates: postTranslations(post, all) };
+    const paths: { params: { slug: string }; props: typeof props & { standard?: boolean } }[] = [{ params: { slug: postSlug(post) }, props }];
+    // A slide article (`slides: true`) is a presentation at its own URL; `<slug>/article/` is the same content in
+    // the standard blog layout.
+    if (post.data.slides) paths.push({ params: { slug: `${postSlug(post)}/article` }, props: { ...props, standard: true } });
+    return paths;
+  });
 }
 
 export async function categoryPaths(lang: Lang) {

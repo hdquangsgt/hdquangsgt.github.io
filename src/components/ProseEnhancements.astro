@@ -1,0 +1,100 @@
+---
+// Client-side enhancements for rendered Markdown (`.prose[data-copy]`), shared by ArticleView and SlideView:
+// scroll boxes for tables and figures, and the code block header with a copy button.
+---
+
+<script>
+  // Wide blocks get their own scroll container, so they never widen the page:
+  //   - tables are wrapped in `.table-wrap` (the <table> stays a real table for assistive technology);
+  //   - an image alone in a paragraph becomes a <figure>, captioned by its Markdown title (![alt](src "caption")).
+  // Without JavaScript the same content still works: see the `.prose > table` fallback in global.css.
+  {
+    const prose = document.querySelector<HTMLElement>('.prose[data-copy]');
+    const scrollBox = (className: string) => {
+      const box = document.createElement('div');
+      box.className = className;
+      box.tabIndex = 0; // keyboard users can scroll it
+      return box;
+    };
+    for (const table of prose?.querySelectorAll<HTMLTableElement>(':scope > table, :scope .slide-text > table') ?? []) {
+      const wrap = scrollBox('table-wrap');
+      table.replaceWith(wrap);
+      wrap.append(table);
+    }
+    for (const p of prose?.querySelectorAll<HTMLParagraphElement>(':scope > p, :scope .slide-text > p') ?? []) {
+      const img = p.children.length === 1 && p.children[0] instanceof HTMLImageElement ? p.children[0] : undefined;
+      if (!img || p.textContent?.trim()) continue;
+      const figure = document.createElement('figure');
+      figure.className = 'figure';
+      const box = scrollBox('figure-scroll');
+      // Large images (diagrams, screenshots) keep a readable minimum width on narrow screens and scroll;
+      // small ones just scale. Judged by the intrinsic width Astro writes on the <img>.
+      if (Number(img.getAttribute('width')) >= 480) box.classList.add('figure-scroll-wide');
+      const caption = img.title;
+      img.removeAttribute('title');
+      box.append(img);
+      figure.append(box);
+      if (caption) {
+        const figcaption = document.createElement('figcaption');
+        figcaption.textContent = caption;
+        figure.append(figcaption);
+      }
+      p.replaceWith(figure);
+    }
+  }
+</script>
+
+<script>
+  // Code blocks: a header with the language (only when the Markdown fence names one) and a copy button.
+  // Button labels come from data attributes so they follow the page language.
+  const prose = document.querySelector<HTMLElement>('.prose[data-copy]');
+  if (prose) {
+    const { copy = 'Copy', copied = 'Copied', copyFailed = 'Copy failed', copyLabel = 'Copy code' } = prose.dataset;
+    const canCopy = Boolean(navigator.clipboard);
+    for (const pre of prose.querySelectorAll<HTMLPreElement>('pre')) {
+      const language = pre.dataset.language;
+      const hasLanguage = Boolean(language) && !['text', 'plaintext', 'txt'].includes(language ?? '');
+      if (!canCopy && !hasLanguage) continue;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-block';
+      pre.replaceWith(wrapper);
+
+      const head = document.createElement('div');
+      head.className = 'code-head';
+      const label = document.createElement('span');
+      label.className = 'code-lang';
+      label.textContent = hasLanguage ? (language ?? '') : '';
+      head.append(label);
+
+      if (canCopy) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'copy-button';
+        button.textContent = copy;
+        button.setAttribute('aria-label', copyLabel);
+        const status = document.createElement('span');
+        status.className = 'visually-hidden';
+        status.setAttribute('role', 'status');
+        button.addEventListener('click', async () => {
+          let ok = true;
+          try {
+            await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
+          } catch {
+            ok = false;
+          }
+          button.textContent = ok ? copied : copyFailed;
+          button.dataset.state = ok ? 'copied' : 'failed';
+          status.textContent = ok ? copied : copyFailed;
+          setTimeout(() => {
+            button.textContent = copy;
+            delete button.dataset.state;
+            status.textContent = '';
+          }, 2000);
+        });
+        head.append(button, status);
+      }
+      wrapper.append(head, pre);
+    }
+  }
+</script>

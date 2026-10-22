@@ -1,0 +1,348 @@
+---
+// A slide-based article as a presentation app. Routed from the same article pages as ArticleView, chosen by
+// the `slides` frontmatter flag; see docs/components.md → Slide-based articles.
+import { render } from 'astro:content';
+import SlideLayout from '../layouts/SlideLayout.astro';
+import ProseEnhancements from '../components/ProseEnhancements.astro';
+import ReadingSettings from '../components/ReadingSettings.astro';
+import { LOCALES, LOCALE_META, localizePath, useTranslations, type Lang } from '../i18n';
+import { postLang, postUrl } from '../utils/posts';
+import type { Props as ArticleProps } from './ArticleView.astro';
+
+export type Props = ArticleProps;
+
+const { post, alternates } = Astro.props;
+const lang = postLang(post);
+const t = useTranslations(lang);
+const s = t.post.slides;
+const { Content, headings } = await render(post);
+const slideHeadings = headings.filter((h) => h.depth === 2);
+const total = slideHeadings.length;
+const otherLanguages = (Object.entries(alternates) as [Lang, string][]).filter(([l]) => l !== lang);
+const blogHome = localizePath(lang, '/blog/');
+// The full article is the standard blog layout, at its own URL (see utils/paths.ts).
+const articleHref = `${postUrl(post)}article/`;
+const { title, description, pubDate, updatedDate, tags, coverImage, draft } = post.data;
+---
+
+<SlideLayout
+  title={title}
+  description={description}
+  type="article"
+  publishedTime={pubDate}
+  modifiedTime={updatedDate}
+  tags={tags}
+  image={coverImage?.src.src}
+  noindex={draft}
+  alternates={alternates}
+>
+  <div class="deck" data-deck data-mode="slides" data-announce={s.announce('{n}', '{total}', '{title}')} data-fullscreen-label={s.fullscreen} data-exit-fullscreen-label={s.exitFullscreen}>
+    <header class="deck-top">
+      <a class="deck-exit" href={blogHome}><span aria-hidden="true">←</span> {t.nav.blog}</a>
+      <h1 class="deck-title">{title}</h1>
+      <div class="deck-tools">
+        <a class="deck-button" href={articleHref}>{s.showArticle}</a>
+        <button type="button" class="deck-button" data-deck-fullscreen hidden aria-pressed="false">{s.fullscreen}</button>
+        <div class="lang-switcher">
+          <select data-lang-select aria-label={t.languageSwitcher} hidden>
+            {
+              LOCALES.map((l) => (
+                <option value={alternates[l] ?? localizePath(l, '/')} lang={LOCALE_META[l].htmlLang} selected={l === lang}>
+                  {LOCALE_META[l].name}
+                  {alternates[l] ? '' : ` (${t.languageHome})`}
+                </option>
+              ))
+            }
+          </select>
+          <noscript>
+            <ul class="lang-links" aria-label={t.languageSwitcher}>
+              {
+                LOCALES.map((l) => (
+                  <li>
+                    <a href={alternates[l] ?? localizePath(l, '/')} hreflang={LOCALE_META[l].htmlLang} lang={LOCALE_META[l].htmlLang} aria-current={l === lang ? 'true' : undefined}>
+                      {l.toUpperCase()}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </noscript>
+        </div>
+        <ReadingSettings />
+      </div>
+    </header>
+
+    <main id="main" class="deck-stage" data-deck-stage tabindex="-1">
+      <div
+        class="prose deck-prose"
+        data-slides
+        data-copy={t.post.copy}
+        data-copied={t.post.copied}
+        data-copy-failed={t.post.copyFailed}
+        data-copy-label={t.post.copyLabel}
+      >
+        <Content />
+      </div>
+    </main>
+
+    <footer class="deck-bottom" data-deck-bar hidden>
+      <div class="deck-progress" role="progressbar" aria-label={s.progress} aria-valuemin="1" aria-valuemax={total} aria-valuenow="1" data-deck-progress><span></span></div>
+      <div class="deck-controls" role="group" aria-label={s.label}>
+        <button type="button" class="deck-button deck-step" data-deck-prev>
+          <span aria-hidden="true">←</span> <span class="deck-step-label">{s.previous}</span>
+        </button>
+        <p class="deck-counter" data-deck-counter>{s.counter(1, total)}</p>
+        <button type="button" class="deck-button deck-step" data-deck-next>
+          <span class="deck-step-label">{s.next}</span> <span aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="deck-button deck-menu-button" data-deck-menu-open aria-haspopup="dialog">{s.menu}</button>
+      </div>
+    </footer>
+
+    <p class="visually-hidden" role="status" aria-live="polite" data-deck-status></p>
+
+    <dialog class="deck-menu" data-deck-menu aria-labelledby="deck-menu-title">
+      <div class="deck-menu-head">
+        <h2 id="deck-menu-title">{s.menuTitle}</h2>
+        <button type="button" class="deck-button" data-deck-menu-close>{s.close}</button>
+      </div>
+      <ol class="deck-menu-list">
+        {
+          slideHeadings.map((h) => (
+            <li>
+              <a href={`#${h.slug}`} data-deck-menu-link>{h.text}</a>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="deck-menu-note">{s.keys}</p>
+      {
+        otherLanguages.length > 0 && (
+          <p class="deck-menu-note">
+            {t.post.alsoIn}:{' '}
+            {otherLanguages.map(([l, href], i) => (
+              <>
+                {i > 0 && ' · '}
+                <a href={href} hreflang={LOCALE_META[l].htmlLang} lang={LOCALE_META[l].htmlLang}>
+                  {LOCALE_META[l].name}
+                </a>
+              </>
+            ))}
+          </p>
+        )
+      }
+    </dialog>
+  </div>
+</SlideLayout>
+
+<ProseEnhancements />
+
+<script>
+  // Groups the article's `##` sections into slides and runs the presentation. Progressive enhancement: if this
+  // script fails the page is the plain long article (the standard layout is also one link away).
+  const root = document.querySelector<HTMLElement>('[data-deck]');
+  const prose = root?.querySelector<HTMLElement>('.prose[data-slides]');
+  const stage = root?.querySelector<HTMLElement>('[data-deck-stage]');
+
+  if (root && prose && stage) {
+    // Slide anatomy: <section.slide> = header (part label + headline) + .slide-body (.slide-text, .slide-visual).
+    const slides: HTMLElement[] = [];
+    let current: HTMLElement | undefined;
+    for (const child of [...prose.children] as HTMLElement[]) {
+      if (child.tagName === 'H2') {
+        current = document.createElement('section');
+        current.className = 'slide';
+        current.setAttribute('aria-labelledby', child.id);
+        prose.insertBefore(current, child);
+        slides.push(current);
+      }
+      current?.append(child);
+    }
+    const pad = (n: number) => String(n).padStart(2, '0');
+    slides.forEach((slide, i) => {
+      slide.id = `slide-${i + 1}`;
+      const h2 = slide.querySelector('h2')!;
+      const kicker = slide.querySelector<HTMLElement>(':scope > .slide-kicker');
+      const header = document.createElement('header');
+      header.className = 'slide-head';
+      if (kicker) {
+        kicker.dataset.n = pad(i + 1);
+        header.append(kicker);
+      }
+      header.append(h2);
+      const text = document.createElement('div');
+      text.className = 'slide-text';
+      const visual = document.createElement('div');
+      visual.className = 'slide-visual';
+      for (const node of [...slide.children].filter((c) => c !== header)) {
+        // Diagrams and images form the slide's visual column; everything else is text.
+        if (node.matches('.figure')) visual.append(node);
+        else text.append(node);
+      }
+      const body = document.createElement('div');
+      body.className = 'slide-body';
+      body.dataset.visual = String(visual.hasChildNodes());
+      body.append(text);
+      if (visual.hasChildNodes()) body.append(visual);
+      slide.replaceChildren(header, body);
+    });
+    const total = slides.length;
+
+    // Language menu: needs JavaScript to navigate, so it stays hidden (with <noscript> links) until now. Each
+    // option's value is the URL of the same slides in that language.
+    const langSelect = root.querySelector<HTMLSelectElement>('[data-lang-select]');
+    if (langSelect) {
+      langSelect.hidden = false;
+      langSelect.addEventListener('change', () => {
+        // Headings differ per language, so the slide is carried over by number (`#slide-N`).
+        window.location.href = `${langSelect.value}#slide-${index + 1}`;
+      });
+      window.addEventListener('pageshow', () => {
+        for (const option of langSelect.options) option.selected = option.defaultSelected;
+      });
+    }
+
+    const { announce = '', fullscreenLabel = '', exitFullscreenLabel = '' } = root.dataset;
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel);
+    const counter = q('[data-deck-counter]')!;
+    const status = q('[data-deck-status]')!;
+    const progress = q('[data-deck-progress]')!;
+    const bar = q('[data-deck-bar]')!;
+    const fsButton = q<HTMLButtonElement>('[data-deck-fullscreen]')!;
+    const prev = q('[data-deck-prev]')!;
+    const next = q('[data-deck-next]')!;
+    const menu = q<HTMLDialogElement>('[data-deck-menu]')!;
+    const menuLinks = [...root.querySelectorAll<HTMLAnchorElement>('[data-deck-menu-link]')];
+
+    let index = 0;
+    const headingId = (i: number) => slides[i].querySelector('h2')?.id ?? slides[i].id;
+
+    // Slides are addressed by heading id (the menu uses it) or `#slide-N`.
+    const indexForHash = (): number => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      const target = id ? document.getElementById(id) : null;
+      return target ? slides.findIndex((sl) => sl === target || sl.contains(target)) : -1;
+    };
+
+    const render = (announceChange: boolean) => {
+      slides.forEach((slide, i) => {
+        slide.hidden = i !== index;
+      });
+      const label = `${pad(index + 1)} / ${pad(total)}`;
+      counter.textContent = label;
+      progress.setAttribute('aria-valuenow', String(index + 1));
+      progress.setAttribute('aria-valuetext', label);
+      progress.style.setProperty('--deck-progress', `${((index + 1) / total) * 100}%`);
+      prev.setAttribute('aria-disabled', String(index === 0));
+      next.setAttribute('aria-disabled', String(index === total - 1));
+      menuLinks.forEach((a, i) => (i === index ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current')));
+      if (announceChange) {
+        status.textContent = announce
+          .replace('{n}', String(index + 1))
+          .replace('{total}', String(total))
+          .replace('{title}', slides[index].querySelector('h2')?.textContent?.trim() ?? '');
+      }
+    };
+
+    const go = (to: number, updateHash = true) => {
+      const clamped = Math.max(0, Math.min(total - 1, to));
+      if (clamped === index) return;
+      index = clamped;
+      render(true);
+      if (updateHash) history.replaceState(null, '', `#${headingId(index)}`);
+      stage.scrollTop = 0;
+    };
+
+    prev.addEventListener('click', () => go(index - 1));
+    next.addEventListener('click', () => go(index + 1));
+
+    // Full screen (hidden where the browser has no Fullscreen API, e.g. iPhone Safari).
+    if (document.fullscreenEnabled) {
+      fsButton.hidden = false;
+      const toggleFullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
+      fsButton.addEventListener('click', toggleFullscreen);
+      document.addEventListener('fullscreenchange', () => {
+        const on = Boolean(document.fullscreenElement);
+        fsButton.textContent = on ? exitFullscreenLabel : fullscreenLabel;
+        fsButton.setAttribute('aria-pressed', String(on));
+      });
+      (root as HTMLElement & { toggleFullscreen?: () => void }).toggleFullscreen = toggleFullscreen;
+    }
+
+    // Slide menu (a modal <dialog>: Escape closes it, focus returns to the button that opened it).
+    q('[data-deck-menu-open]')!.addEventListener('click', () => {
+      menu.showModal();
+      menuLinks[index]?.focus();
+    });
+    q('[data-deck-menu-close]')!.addEventListener('click', () => menu.close());
+    menu.addEventListener('click', (e) => {
+      if (e.target === menu) menu.close(); // a click on the backdrop
+    });
+    menuLinks.forEach((a, i) =>
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        menu.close();
+        go(i);
+      }),
+    );
+
+    document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || menu.open) return;
+      const el = e.target instanceof Element ? e.target : null;
+      // Keys belong to form fields, buttons being activated and scrollable regions (code, tables, diagrams).
+      if (el?.closest('input, textarea, select, [contenteditable], [role="slider"], pre, .figure-scroll, .table-wrap')) return;
+      if (e.key === 'f' || e.key === 'F') {
+        (root as HTMLElement & { toggleFullscreen?: () => void }).toggleFullscreen?.();
+        return;
+      }
+      const step: Record<string, () => void> = {
+        ArrowRight: () => go(index + 1),
+        PageDown: () => go(index + 1),
+        ArrowLeft: () => go(index - 1),
+        PageUp: () => go(index - 1),
+        Home: () => go(0),
+        End: () => go(total - 1),
+      };
+      if (!step[e.key]) return;
+      e.preventDefault();
+      step[e.key]();
+    });
+
+    // Touch: a quick horizontal swipe on the stage changes slide. Diagrams, code and tables scroll sideways themselves.
+    let touch: { x: number; y: number } | undefined;
+    stage.addEventListener(
+      'touchstart',
+      (e) => {
+        const target = e.target instanceof Element ? e.target : null;
+        touch = e.touches.length === 1 && !target?.closest('pre, .figure-scroll, .table-wrap') ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : undefined;
+      },
+      { passive: true },
+    );
+    stage.addEventListener(
+      'touchend',
+      (e) => {
+        if (!touch) return;
+        const dx = e.changedTouches[0].clientX - touch.x;
+        const dy = e.changedTouches[0].clientY - touch.y;
+        touch = undefined;
+        if (Math.abs(dx) > 70 && Math.abs(dy) < 45) go(index + (dx < 0 ? 1 : -1));
+      },
+      { passive: true },
+    );
+
+    window.addEventListener('hashchange', () => {
+      const i = indexForHash();
+      if (i < 0) return;
+      go(i, false);
+    });
+
+    const initial = indexForHash();
+    if (initial >= 0) index = initial;
+    render(false);
+    bar.hidden = false;
+    prose.dataset.deckReady = '';
+    clearTimeout((window as unknown as { __deckGuard?: number }).__deckGuard);
+    // A hash makes the browser scroll the stage to the heading; a slide always opens at its top.
+    requestAnimationFrame(() => (stage.scrollTop = 0));
+  }
+</script>

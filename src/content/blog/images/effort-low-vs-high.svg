@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="450" viewBox="0 0 720 450" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.4; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.8; }
+    .obs { fill: #edf3fc; stroke: #1f5fbf; stroke-width: 1.8; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.8; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.8; }
+    .hyp { fill: none; stroke: #8a9099; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .zone { fill: none; stroke: #8a9099; stroke-width: 1.3; stroke-dasharray: 3 4; }
+    .band { fill: #f1efe8; stroke: #c9c5b8; stroke-width: 1; }
+    .band2 { fill: #ecf1f8; stroke: #b9c6da; stroke-width: 1; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .good { fill: #0b6b52; }
+    .bad { fill: #a33f1c; }
+    .h { font-weight: 700; }
+    .l { font-size: 18px; }
+    .s { font-size: 13px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.8; fill: none; }
+    .thick { stroke: #0b6b52; stroke-width: 4; fill: none; }
+    .thin { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+    .flow { stroke: #0b6b52; stroke-width: 2.4; fill: none; }
+    .loop { stroke: #0b6b52; stroke-width: 2.4; fill: none; stroke-dasharray: 7 5; }
+    .redline { stroke: #a33f1c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    .arrowg { fill: #0b6b52; }
+    .arrowr { fill: #a33f1c; }
+    .dot { fill: #0b6b52; }
+    .dotm { fill: var(--color-text-muted, #595f67); }
+    .ring { fill: var(--color-bg, #ffffff); stroke: var(--color-text, #1d1f22); stroke-width: 2; }
+    .sq { fill: var(--color-text, #1d1f22); }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .obs { fill: #17233a; stroke: #8ab6ff; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .hyp { stroke: #8a929b; }
+      .zone { stroke: #6b737c; }
+      .band { fill: #1b1c19; stroke: #3a3a35; }
+      .band2 { fill: #171d27; stroke: #2d3a50; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .good { fill: #6fd3ae; }
+      .bad { fill: #f3a184; }
+      .thick { stroke: #6fd3ae; }
+      .thin, .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .flow { stroke: #6fd3ae; }
+      .loop { stroke: #6fd3ae; }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+      .arrowg { fill: #6fd3ae; }
+      .arrowr { fill: #f3a184; }
+      .dot { fill: #6fd3ae; }
+      .dotm { fill: var(--color-text-muted, #a2a9b1); }
+      .ring { fill: var(--color-bg, #121416); stroke: var(--color-text, #e4e6e8); }
+      .sq { fill: var(--color-text, #e4e6e8); }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowg"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowr"/></marker>
+  </defs>
+  <rect class="bg" width="720" height="450"/>
+  <text x="20" y="28" text-anchor="start" class="t h l">Tendencies, not measurements</text>
+  <text x="20" y="95" text-anchor="start" class="t h">Quality on a hard task</text>
+  <path class="thin" d="M230 90 L690 90"/>
+  <text x="230" y="116" text-anchor="start" class="m s">lower</text>
+  <text x="690" y="116" text-anchor="end" class="m s">higher</text>
+  <circle class="ring" cx="330" cy="90" r="9"/>
+  <rect class="sq" x="562" y="82" width="16" height="16"/>
+  <text x="20" y="165" text-anchor="start" class="t h">Quality on a simple task</text>
+  <path class="thin" d="M230 160 L690 160"/>
+  <text x="230" y="186" text-anchor="start" class="m s">lower</text>
+  <text x="690" y="186" text-anchor="end" class="m s">higher</text>
+  <circle class="ring" cx="545" cy="160" r="9"/>
+  <rect class="sq" x="557" y="152" width="16" height="16"/>
+  <text x="20" y="235" text-anchor="start" class="t h">Latency</text>
+  <path class="thin" d="M230 230 L690 230"/>
+  <text x="230" y="256" text-anchor="start" class="m s">lower</text>
+  <text x="690" y="256" text-anchor="end" class="m s">higher</text>
+  <circle class="ring" cx="330" cy="230" r="9"/>
+  <rect class="sq" x="577" y="222" width="16" height="16"/>
+  <text x="20" y="305" text-anchor="start" class="t h">Cost</text>
+  <path class="thin" d="M230 300 L690 300"/>
+  <text x="230" y="326" text-anchor="start" class="m s">lower</text>
+  <text x="690" y="326" text-anchor="end" class="m s">higher</text>
+  <circle class="ring" cx="340" cy="300" r="9"/>
+  <rect class="sq" x="567" y="292" width="16" height="16"/>
+  <circle class="ring" cx="40" cy="378" r="9"/>
+  <text x="58" y="383" text-anchor="start" class="t s">lower effort setting</text>
+  <rect class="sq" x="232" y="370" width="16" height="16"/>
+  <text x="258" y="383" text-anchor="start" class="t s">higher effort setting</text>
+  <text x="20" y="418" text-anchor="start" class="m s">Positions are qualitative. The size of each gap depends on the model, the task and how you measure.</text>
+  <text x="20" y="438" text-anchor="start" class="m s">On simple tasks the quality gap tends to shrink while latency and cost still rise.</text>
+</svg>

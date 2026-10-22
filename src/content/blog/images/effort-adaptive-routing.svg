@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="580" viewBox="0 0 720 580" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.4; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.8; }
+    .obs { fill: #edf3fc; stroke: #1f5fbf; stroke-width: 1.8; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.8; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.8; }
+    .hyp { fill: none; stroke: #8a9099; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .zone { fill: none; stroke: #8a9099; stroke-width: 1.3; stroke-dasharray: 3 4; }
+    .band { fill: #f1efe8; stroke: #c9c5b8; stroke-width: 1; }
+    .band2 { fill: #ecf1f8; stroke: #b9c6da; stroke-width: 1; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .good { fill: #0b6b52; }
+    .bad { fill: #a33f1c; }
+    .h { font-weight: 700; }
+    .l { font-size: 18px; }
+    .s { font-size: 13px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.8; fill: none; }
+    .thick { stroke: #0b6b52; stroke-width: 4; fill: none; }
+    .thin { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+    .flow { stroke: #0b6b52; stroke-width: 2.4; fill: none; }
+    .loop { stroke: #0b6b52; stroke-width: 2.4; fill: none; stroke-dasharray: 7 5; }
+    .redline { stroke: #a33f1c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    .arrowg { fill: #0b6b52; }
+    .arrowr { fill: #a33f1c; }
+    .dot { fill: #0b6b52; }
+    .dotm { fill: var(--color-text-muted, #595f67); }
+    .ring { fill: var(--color-bg, #ffffff); stroke: var(--color-text, #1d1f22); stroke-width: 2; }
+    .sq { fill: var(--color-text, #1d1f22); }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .obs { fill: #17233a; stroke: #8ab6ff; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .hyp { stroke: #8a929b; }
+      .zone { stroke: #6b737c; }
+      .band { fill: #1b1c19; stroke: #3a3a35; }
+      .band2 { fill: #171d27; stroke: #2d3a50; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .good { fill: #6fd3ae; }
+      .bad { fill: #f3a184; }
+      .thick { stroke: #6fd3ae; }
+      .thin, .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .flow { stroke: #6fd3ae; }
+      .loop { stroke: #6fd3ae; }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+      .arrowg { fill: #6fd3ae; }
+      .arrowr { fill: #f3a184; }
+      .dot { fill: #6fd3ae; }
+      .dotm { fill: var(--color-text-muted, #a2a9b1); }
+      .ring { fill: var(--color-bg, #121416); stroke: var(--color-text, #e4e6e8); }
+      .sq { fill: var(--color-text, #e4e6e8); }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowg"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowr"/></marker>
+  </defs>
+  <rect class="bg" width="720" height="580"/>
+  <rect class="box" x="260" y="10" width="200" height="44" rx="8"/>
+  <text x="360" y="37" text-anchor="middle" class="t h">Receive task</text>
+  <path class="line" d="M360 54 L360 78" marker-end="url(#a)"/>
+  <rect class="obs" x="210" y="80" width="300" height="62" rx="8"/>
+  <text x="360" y="106.5" text-anchor="middle" class="t h">Assess complexity, uncertainty, risk</text>
+  <text x="360" y="125.5" text-anchor="middle" class="m s">rules · classifier · model router</text>
+  <rect class="hyp" x="20" y="86" width="150" height="50" rx="8"/>
+  <text x="95" y="106.5" text-anchor="middle" class="t h">Router can err</text>
+  <text x="95" y="125.5" text-anchor="middle" class="m s">measure it</text>
+  <path class="dash" d="M170 111 L208 111"/>
+  <path class="line" d="M360 142 L360 166" marker-end="url(#a)"/>
+  <rect class="ext" x="210" y="168" width="300" height="58" rx="8"/>
+  <text x="360" y="192.5" text-anchor="middle" class="t h">Select a supported setting</text>
+  <text x="360" y="211.5" text-anchor="middle" class="m s">effort level or model</text>
+  <path class="line" d="M360 226 V244"/>
+  <path class="line" d="M120 244 H600"/>
+  <path class="line" d="M120 244 L120 268" marker-end="url(#a)"/>
+  <rect class="core" x="20" y="270" width="200" height="56" rx="8"/>
+  <text x="120" y="293.5" text-anchor="middle" class="t h">Lower effort</text>
+  <text x="120" y="312.5" text-anchor="middle" class="m s">routine, low risk</text>
+  <path class="line" d="M120 326 V344"/>
+  <path class="line" d="M360 244 L360 268" marker-end="url(#a)"/>
+  <rect class="core" x="260" y="270" width="200" height="56" rx="8"/>
+  <text x="360" y="293.5" text-anchor="middle" class="t h">Medium effort</text>
+  <text x="360" y="312.5" text-anchor="middle" class="m s">typical work</text>
+  <path class="line" d="M360 326 V344"/>
+  <path class="line" d="M600 244 L600 268" marker-end="url(#a)"/>
+  <rect class="core" x="500" y="270" width="200" height="56" rx="8"/>
+  <text x="600" y="293.5" text-anchor="middle" class="t h">Higher effort</text>
+  <text x="600" y="312.5" text-anchor="middle" class="m s">hard or high risk</text>
+  <path class="line" d="M600 326 V344"/>
+  <path class="line" d="M120 344 H600"/>
+  <path class="line" d="M360 344 L360 366" marker-end="url(#a)"/>
+  <rect class="box" x="210" y="368" width="300" height="44" rx="8"/>
+  <text x="360" y="395" text-anchor="middle" class="t h">Execute the task</text>
+  <path class="line" d="M360 412 L360 436" marker-end="url(#a)"/>
+  <rect class="os" x="210" y="438" width="300" height="52" rx="8"/>
+  <text x="360" y="459.5" text-anchor="middle" class="t h">Verify the result</text>
+  <text x="360" y="478.5" text-anchor="middle" class="m s">tests, checks, acceptance criteria</text>
+  <path class="line" d="M510 464 L548 464" marker-end="url(#a)"/>
+  <text x="516" y="456" text-anchor="start" class="good s h">pass</text>
+  <rect class="core" x="550" y="440" width="150" height="48" rx="8"/>
+  <text x="625" y="469" text-anchor="middle" class="t h">Done</text>
+  <path class="line" d="M360 490 L360 516" marker-end="url(#a)"/>
+  <text x="368" y="508" text-anchor="start" class="bad s h">fail</text>
+  <rect class="os" x="150" y="518" width="420" height="50" rx="8"/>
+  <text x="360" y="538.5" text-anchor="middle" class="t h">Escalate: retry, raise effort, or gather evidence</text>
+  <text x="360" y="557.5" text-anchor="middle" class="m s">then execute again</text>
+  <path class="loop" d="M150 543 H60 V390 H208" marker-end="url(#ag)"/>
+</svg>

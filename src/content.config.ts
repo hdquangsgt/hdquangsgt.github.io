@@ -19,6 +19,8 @@ const blog = defineCollection({
       tags: z.array(z.string().min(1)).default([]),
       featured: z.boolean().default(false),
       draft: z.boolean().default(false),
+      // Slide-based article: each `##` section is one slide (see SlideDeck.astro). Without JavaScript it is a normal article.
+      slides: z.boolean().default(false),
       author: z.string().optional(),
       // Optional Qiita opt-in; read only by scripts/qiita/, ignored when rendering.
       qiita: z
