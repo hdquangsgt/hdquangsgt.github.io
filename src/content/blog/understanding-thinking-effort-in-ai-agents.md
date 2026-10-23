@@ -2,6 +2,7 @@
 title: 'Understanding Thinking Effort in AI Agents: What Developers Need to Know'
 description: 'A slide-based guide to reasoning effort for developers who use LLM APIs and coding agents: what the setting changes, how it differs from the agent loop, when more effort helps, and how to measure it instead of guessing.'
 pubDate: 2026-10-22T09:00:00+07:00
+updatedDate: 2026-10-22T22:00:00+07:00
 category: AI Agents
 tags: [thinking-effort, reasoning, ai-agents, evaluation, llm-api]
 featured: false
@@ -15,13 +16,15 @@ slides: true
 
 **Why asking an AI to think harder does not always produce better results.**
 
-What does a thinking-effort setting actually change, and when should you raise it? This deck follows that question through 18 slides: the concept, the difference between reasoning and agent execution, real engineering scenarios, and a way to decide with evidence instead of intuition.
+What does a thinking-effort setting actually change, and when should you raise it? This deck follows that question through 21 slides: the concept, the difference between reasoning and agent execution, real engineering scenarios, a production architecture, and a way to decide with evidence instead of intuition.
 
 ![An agent at the left sends one task down three lanes. The top lane is a short direct path to a fast answer. The middle lane weighs one alternative and drops it. The bottom lane is a thick path with several branches, two dead ends and a verification step before a verified result.](./images/effort-cover-paths.svg "One task, three levels of reasoning effort. A conceptual illustration, not a measurement.")
 
 <div class="callout article-only">
 
-**How to read this article.** Claims carry labels: <span class="label documented">Documented</span> comes from the official docs linked beside it, <span class="label opinion">Opinion</span> is my interpretation, and <span class="label proposal">Proposal</span> is an architecture I recommend, not something a vendor ships. Diagrams are conceptual unless a caption says otherwise. API facts were checked against the vendors' documentation on October 22, 2026; model names and accepted values change often, so check the linked pages before you copy anything.
+**How to read this article.** Claims carry labels. <span class="label documented">Documented</span> means stated in the official documentation or paper linked beside it. <span class="label verified">Verified</span> means I ran it myself, and the callout says what was run and what that run cannot show. <span class="label opinion">Opinion</span> is my interpretation or engineering judgment. <span class="label proposal">Proposal</span> is a design I recommend, not something a vendor ships. <span class="label illustrative">Illustrative</span> marks invented numbers and scenarios used to explain an idea. No claim here is an experiment: I ran no benchmark, so every number on these slides either comes from vendor documentation or is marked illustrative. Diagrams are conceptual unless a caption says otherwise.
+
+**Last verified: October 22, 2026.** Provider facts were checked that day against the linked OpenAI, Anthropic and Google pages. The code on slides 15 and 18 was type-checked against `openai` 7.42.0, `@anthropic-ai/sdk` 1.1.0 and `@google/genai` 2.30.0 with TypeScript 5.9.3. None of it was sent to a live API. Model names and accepted values change often, so check the linked pages before you copy anything.
 
 </div>
 
@@ -58,7 +61,7 @@ Three assumptions are common, and each is wrong in a useful way:
 
 <div class="callout documented">
 
-<span class="label documented">Documented</span> Anthropic's own guidance for its most capable effort level warns that on some workloads it "adds significant cost for relatively small quality gains" and can lead to overthinking on less demanding tasks ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
+<span class="label documented">Documented</span> In its per-model guidance for Claude Opus 4.7, Anthropic says that on most workloads the highest level, `max`, "adds significant cost for relatively small quality gains", and that on some structured-output or less intelligence-sensitive tasks it can lead to overthinking ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). The guidance is written for that model; other models' guidance differs.
 
 </div>
 
@@ -74,9 +77,10 @@ Thinking effort is a **model- or platform-specific control, where one exists,** 
 
 <span class="label documented">Documented</span> What the vendors say, in their own words:
 
-- OpenAI: reasoning tokens are billed as output tokens, count toward `max_output_tokens`, and appear in `usage.output_tokens_details.reasoning_tokens`. The raw reasoning is not returned; a summary is opt-in ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
-- Anthropic: effort is "a behavioral signal, not a strict token budget", and it affects all output tokens, including text and tool calls, not only thinking ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
-- Google: `thinking_level` accepts different levels per model, and thought summaries are opt-in ([Gemini: Thinking](https://ai.google.dev/gemini-api/docs/thinking)).
+- OpenAI: reasoning tokens are billed as output tokens, count toward `max_output_tokens` and the context window, and appear in `usage.output_tokens_details.reasoning_tokens`. The raw reasoning is not returned; a summary is opt-in through `reasoning.summary` ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
+- Anthropic: effort is "a behavioral signal, not a strict token budget", and it affects all output tokens, including text and tool calls, not only thinking ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). You are billed for the full thinking even when only a summary, or nothing, is displayed; `usage.output_tokens_details.thinking_tokens` reports it ([Anthropic: Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost)).
+- Google: `thinking_level` accepts a different set of levels per model, response pricing is "the sum of output tokens and thinking tokens", and thought summaries are opt-in ([Gemini: Thinking](https://ai.google.dev/gemini-api/docs/thinking)).
+- Defaults differ. Anthropic documents `high` as the default on most models and `medium` on Claude Opus 5.5 and Claude Haiku 5.5; OpenAI documents `medium` as the default for several models; Gemini's default depends on the model. Omitting the setting does not mean the same thing everywhere.
 
 </div>
 
@@ -114,7 +118,7 @@ The conceptual flow: user task and context → model reasoning → decision to a
 
 ![The agent loop in three tinted layers. Orchestration layer: 1, task and context; stop rules; 5, updated context. Model layer: 2, reasoning, highlighted as the only place reasoning effort acts, and 3, a decision between answering and calling a tool. Execution layer: 4, tool execution. An answer passes a dashed verification checkpoint that straddles the layers, then the stop rules, then returns the final answer. A tool call goes to tool execution, whose result becomes updated context, which feeds 6, the next decision, back into reasoning.](./images/effort-agent-flow.svg "Six steps in three layers. Only step 2 is affected by reasoning effort. The dashed, animated arrows are the loop; verification is a checkpoint, not a layer.")
 
-Effort acts on one step of this loop, the reasoning inside the model call. Overall performance also depends on context quality, which tools exist, how the harness orchestrates retries and stopping, and whether anything verifies the result.
+Effort acts on one step of this loop, the reasoning inside the model call. Overall performance also depends on context quality, which tools exist, how the harness orchestrates retries and stopping, and whether anything verifies the result. Slide 15 turns this loop into a production reference architecture.
 
 <div class="callout documented">
 
@@ -135,7 +139,7 @@ Effort acts on one step of this loop, the reasoning inside the model call. Overa
 | Hard, multi-step tasks | may be less thorough | may be more thorough |
 | Simple tasks | usually fine | little gain, still costs more |
 
-**These are tendencies, not guarantees.** How large each gap is depends on the model, the task and the metric. This article gives no numeric improvements because none would generalize; slide 15 shows how to produce your own.
+**These are tendencies, not guarantees.** How large each gap is depends on the model, the task and the metric. This article gives no numeric improvements because none would generalize; slides 16 and 17 show how to produce your own.
 
 ## When Is Higher Thinking Effort Worth It?
 
@@ -215,6 +219,22 @@ For coding agents, verification means concrete mechanisms: automated tests, type
 
 The goal is not maximum quality at any price, or minimum latency at any cost. It is an acceptable trade-off for the workload and its business requirements. The three do not reduce to one universal score.
 
+**Cost has three layers**, and each answers a different question:
+
+| Layer | What it counts | Where the number comes from |
+| --- | --- | --- |
+| Model call | Input, cached input, output and reasoning tokens, times the provider's per-token prices | The `usage` object of each response, and the provider's pricing page |
+| Agent run | Every model call in the run, plus tool execution, retries, sandbox or CI time, and human review | Your traces and infrastructure bills |
+| Task outcome | Total spend and time, divided by the tasks that passed verification | Your evaluation results |
+
+Effort acts on the first layer, but the decision belongs to the third. A setting that makes each call cheaper can make the task more expensive if runs fail more often and need retries, or a person, to finish.
+
+<div class="callout illustrative">
+
+<span class="label illustrative">Illustrative</span> Invented numbers, to show the arithmetic only. Setting A costs $0.40 per run and passes verification on 50 of 100 runs: $40 spent, $0.80 per successful task. Setting B costs $0.60 per run and passes on 80 of 100: $60 spent, $0.75 per successful task. B is 50% more expensive per run and cheaper per success, and the gap widens once you count the person who finishes each failed task. With different numbers A wins, which is why you measure.
+
+</div>
+
 ## Do Not Default to Maximum Effort for Every Request
 
 <p class="slide-kicker">Part IV · Production systems</p>
@@ -233,57 +253,264 @@ Routing can use rules, a classifier, a model-based router, or a feedback-driven 
 
 Two cautions. Task classification can itself be wrong, so evaluate the router like any other component. And use only effort levels the chosen model or API supports.
 
+## A Reference Architecture for the Agent Loop
+
+<p class="slide-kicker">Part IV · Production systems</p>
+
+![A dashed region labeled loop controller, your harness, not the model, checked before every model call: step, token and time budgets, a repeated-action detector and stop rules. Inside, five boxes in a row: context, model call where effort acts, decision between answer and tool call, tool policy with allow, ask and deny, and a tool runner with timeout and retry. A dashed arrow returns each tool result with its status, ok, error or timeout, to context. An answer goes down to a verifier with tests, types and the spec. A pass leads to done, verified and traced. A fail returns the failing checks to context as feedback. The tool policy sends actions that need approval to an escalate-to-a-human box, which also covers budget hits and stuck loops. Below the region, a band says to trace every step with one span each, and four boxes classify failed runs: reasoning, tool execution, orchestration and verification.](./images/effort-agent-architecture.svg "A proposed harness, not provider behavior. Effort acts inside one box; everything else is your code.")
+
+<div class="callout proposal">
+
+<span class="label proposal">Proposal</span> The loop on this slide is my recommendation for a production harness. No provider ships it as is.
+
+</div>
+
+| Concern | Proposed control |
+| --- | --- |
+| Runaway loops | Step, token and wall-clock budgets, checked before every model call |
+| Unproductive loops | Stop when the same tool call with the same arguments repeats, or the same check keeps failing |
+| Tool failures and timeouts | A timeout per tool. Retry only idempotent tools. Return errors and timeouts to the model as results; do not hide them |
+| Consequential actions | A policy per tool: allow read-only tools, ask a person before writes, deploys, deletes or payments, deny the rest. Run code in a sandbox |
+| Context | Append each tool result with its status; truncate large outputs and keep a pointer to the full artifact |
+| Observability | One trace span per model call, tool call and check, recording the effort setting and token usage |
+| Final result | Accept only what passes the verifier |
+
+```typescript
+const LIMITS = { maxSteps: 30, maxOutputTokens: 400_000, maxWallClockMs: 15 * 60_000, maxRepeats: 3 };
+
+async function runTask(task: Task): Promise<RunResult> {
+  const ctx = newContext(task);
+  const startedAt = Date.now();
+  let outputTokens = 0;
+
+  for (let step = 1; step <= LIMITS.maxSteps; step++) {
+    if (outputTokens > LIMITS.maxOutputTokens || Date.now() - startedAt > LIMITS.maxWallClockMs) {
+      return { outcome: "stopped", reason: "budget_exhausted", suspected: "orchestration" };
+    }
+
+    // The only place the effort setting acts.
+    const turn = await trace("model_call", () => callModel(ctx, { effort: chooseEffort(task) }));
+    outputTokens += turn.usage.outputTokens;
+
+    if (turn.kind === "answer") {
+      const check = await trace("verify", () => verify(task, turn.answer));
+      if (check.passed) return { outcome: "verified", answer: turn.answer, check };
+      ctx.append({ type: "verification_failed", findings: check.findings });
+      continue;
+    }
+
+    const call = turn.toolCall;
+    if (repeatCount(ctx, call) >= LIMITS.maxRepeats) {
+      return { outcome: "stopped", reason: "no_progress", suspected: "reasoning" };
+    }
+
+    const policy = toolPolicy(call); // "allow" | "ask" | "deny"
+    if (policy === "deny" || (policy === "ask" && !(await askHuman(call)))) {
+      ctx.append({ type: "tool_denied", call });
+      continue;
+    }
+
+    // Retry only idempotent tools; errors and timeouts go back to the model as results.
+    const result = await trace("tool_call", () =>
+      runTool(call, { timeoutMs: 60_000, retries: call.idempotent ? 2 : 0 }),
+    );
+    ctx.append({ type: "tool_result", call, result });
+  }
+
+  return { outcome: "stopped", reason: "step_limit", suspected: "orchestration" };
+}
+```
+
+<div class="callout verified">
+
+<span class="label verified">Verified</span> This loop passes `tsc --strict` (TypeScript 5.9.3) with stub declarations for the helpers it calls (`callModel`, `verify`, `runTool` and the rest). I also ran it on Node.js 26.9.0 against a scripted fake model and fake tools, and 8 of 8 control-flow tests passed: verified answer, verification feedback, repeated-call stop, step limit, token budget, denied and unapproved tools, no retries for non-idempotent tools, and tool timeouts returned to the model. The wall-clock budget was not tested. No real model was called, so this shows the control flow works, not how any model behaves inside it. The limits are placeholders to tune.
+
+</div>
+
+<div class="callout documented">
+
+<span class="label documented">Documented</span> Anthropic recommends the core of this design: agents should get "ground truth" from the environment at each step, and should include stopping conditions "such as a maximum number of iterations" ([Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)).
+
+</div>
+
+**Label every failed run** with the class that broke first, by reading its trace. *Reasoning*: the facts were in context and the plan was still wrong. *Tool execution*: an error, a timeout, or bad output. *Orchestration*: lost context, a loop, or an exhausted budget. *Verification*: a check was missing, flaky or wrong. The `suspected` field in the code is only a first guess; the trace decides.
+
+<div class="callout opinion">
+
+<span class="label opinion">Opinion</span> Only the first class is a reason to try more effort. The other three are fixed in the harness.
+
+</div>
+
 ## Measure Whether Higher Effort Actually Helps
 
 <p class="slide-kicker">Part IV · Production systems</p>
 
-Build an evaluation set that represents your real workload, then compare the settings your model supports on equivalent tasks under comparable conditions.
+Build an evaluation set that represents your real workload: real tasks, each with a verifier written before you look at any results. Then compare the settings your model supports under conditions that differ only in effort.
 
-![A dashboard template with a banner reading template, no measured data. Nine empty tiles with dashes: task success rate, verified acceptance rate, test pass rate, latency P50, latency P95, cost per successful task, retries per task, tool calls per task and agent wall-clock time. Below, an empty success-versus-cost chart with placeholder markers labeled as not data, and a protocol checklist.](./images/effort-eval-dashboard.svg "A template, not results. Every value is a dash because no experiment is being reported here.")
+![A dashboard template with a banner reading template, no measured data. Nine empty tiles with dashes: verified task success, first-attempt success, test pass rate, latency P50, latency P95, cost per successful task, average retries per task, tool calls per task and agent wall-clock time. Below, an empty success-versus-cost chart with placeholder markers labeled as not data, and a protocol checklist.](./images/effort-eval-dashboard.svg "A template, not results. Every value is a dash because no experiment is being reported here.")
 
-| Measure | Why |
-| --- | --- |
-| Task success and verified acceptance rate | The thing you actually want |
-| Test pass rate | An objective check where tests exist |
-| Latency P50 and P95 | The typical and the worst realistic experience |
-| Cost per *successful* task | Cheap failures are not cheap |
-| Retry frequency, tool-call count, wall-clock time | What the agent loop costs you |
+**Hold everything else constant.** Pin and record:
 
-Models and agents are nondeterministic, so run repeated trials and report spread, not a single run. Do not judge success by answer length or reasoning-token count: both measure effort spent, not quality delivered. Any number you publish should come from a documented experiment; the dashboard above is deliberately empty.
+- the model snapshot ID and the SDK version;
+- the system prompt, tool definitions and harness version;
+- the context each task starts from: repository commit, fixtures, retrieved documents;
+- the output cap (`max_output_tokens` or `max_tokens`) and the loop budgets from slide 15;
+- the verifier and its pass criteria.
+
+Change only the effort value, use only values the model documents, and interleave the settings in time so that a provider-side change or a slow hour does not land on one setting.
+
+**Run each task several times per setting.** Two runs of the same prompt can differ, so one run per task measures luck as much as the setting. Fix the number of runs before you start, compare settings task by task on the same tasks, and report an interval, not only an average. For success rates, a binomial interval such as Wilson's works; for latency and cost, bootstrap over tasks.
+
+<div class="callout opinion">
+
+<span class="label opinion">Opinion</span> Five runs per task per setting, over 30 to 50 tasks, is a reasonable first pass. If the intervals of two settings overlap heavily, you have not shown a difference yet; add tasks or runs before you conclude anything.
+
+</div>
+
+Do not judge success by answer length or reasoning-token count: both measure effort spent, not quality delivered.
+
+## A Benchmark Template You Can Fill In
+
+<p class="slide-kicker">Part IV · Production systems</p>
+
+Define every metric before the first run, so the numbers cannot be chosen after you see them:
+
+| Metric | Definition | Watch for |
+| --- | --- | --- |
+| Verified task success rate | Runs whose final result passed the verifier, divided by all runs | The headline number |
+| First-attempt success rate | Runs that passed on the first answer, with no verification feedback and no retries, divided by all runs | How much of the success comes from the loop's recovery |
+| Test pass rate | Passing tests divided by tests run, at the end of each run | Partial credit; never a substitute for verified success |
+| Latency, median and P95 | Wall-clock time from task start to final result, per run | P95 needs many runs before it means anything |
+| Cost per successful task | Total spend over all runs, failed ones included, divided by verified successes | Add tool and infrastructure cost where you can |
+| Average retry count | Model calls made after a failed check or a tool error, per run | Kept separate from total model calls |
+
+<div class="callout illustrative">
+
+<span class="label illustrative">Illustrative</span> A template, not results. Every cell is a dash because no experiment is reported in this article.
+
+| Setting | Runs | Verified success (95% CI) | First-attempt success | Test pass rate | Latency P50 / P95 | Cost per success | Avg retries |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| low | — | — | — | — | — / — | — | — |
+| medium | — | — | — | — | — / — | — | — |
+| high | — | — | — | — | — / — | — | — |
+
+Publish it with the run date, model snapshot, SDK versions, task-set version, verifier version and runs per task.
+
+</div>
+
+Why measure instead of assuming? Higher effort can help on tasks that need more deliberation, and it also tends to add latency and output tokens. Which effect wins depends on the model, the task mix and the strength of your verifier, and it can change when the model does.
+
+<div class="callout documented">
+
+<span class="label documented">Documented</span> Anthropic's effort guide says "the impact of effort levels varies by task type" and advises you to "evaluate performance on your specific use cases before deploying" ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). OpenAI says supported values depend on the model ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
+
+</div>
 
 ## Make Reasoning Effort an Explicit Engineering Decision
 
 <p class="slide-kicker">Part IV · Production systems</p>
 
-Where a provider supports it, effort is a request parameter. Here is an OpenAI Responses API request in the documented shape:
+Where a provider supports it, effort is a request parameter. Here is an OpenAI Responses API request in the documented shape, with the reasoning-token count read back from the response:
 
-```javascript
+```typescript
+import OpenAI from "openai";
+
+const client = new OpenAI();
+
 const response = await client.responses.create({
   model: "gpt-6-astra",
-  reasoning: {
-    effort: "high", // the setting this slide is about
-  },
+  reasoning: { effort: "high" }, // the setting this slide is about
   input: "Analyze this production bug...",
 });
 
 console.log(response.output_text);
+console.log(response.usage?.output_tokens_details.reasoning_tokens);
 ```
 
 <div class="callout documented">
 
-<span class="label documented">Documented</span> The docs checked on October 22, 2026 show `reasoning: { effort: ... }` on `responses.create`, list the values `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`, and state that supported values depend on the model: for example, GPT-6 Astra rejects `none` with HTTP 400 ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)). The model name here is the one the docs use; I did not execute this request, so confirm the model and values on its model page before relying on it.
+<span class="label documented">Documented</span> The OpenAI guide shows `reasoning: { effort }` on `responses.create`, lists `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`, and says supported values depend on the model. GPT-6 Astra, the model the guide's own example uses, rejects `none` with HTTP 400 ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)); its model page lists `low` through `max` ([GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra)).
 
 </div>
 
 The setting expresses how much reasoning to apply. It does not return the model's private reasoning; for that, only a summary is available, opt-in.
 
-**Other providers spell it differently.** There is no shared format:
+The same request on Anthropic's Messages API and on the Gemini Interactions API:
 
-| Provider | Parameter | Source |
-| --- | --- | --- |
-| OpenAI (Responses API) | `reasoning: { effort }` | [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning) |
-| Anthropic (Messages API) | `output_config: { effort }` | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) |
-| Google (Gemini API) | `thinking_level` | [Thinking](https://ai.google.dev/gemini-api/docs/thinking) |
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic();
+
+const message = await anthropic.messages.create({
+  model: "claude-opus-5-5",
+  max_tokens: 16000, // thinking counts toward this cap
+  output_config: { effort: "high" },
+  messages: [{ role: "user", content: "Analyze this production bug..." }],
+});
+
+console.log(message.usage.output_tokens_details?.thinking_tokens);
+```
+
+```typescript
+import { GoogleGenAI } from "@google/genai";
+
+const gemini = new GoogleGenAI({});
+
+const interaction = await gemini.interactions.create({
+  model: "gemini-3.8-flash",
+  input: "Analyze this production bug...",
+  generation_config: { thinking_level: "high" },
+});
+
+console.log(interaction.output_text);
+console.log(interaction.usage?.total_thought_tokens);
+```
+
+<div class="callout verified">
+
+<span class="label verified">Verified</span> All three snippets pass `tsc --strict` (TypeScript 5.9.3) against `openai` 7.42.0, `@anthropic-ai/sdk` 1.1.0 and `@google/genai` 2.30.0. As a negative control, an unknown effort value, `effort` placed at the top level of an Anthropic request, `adaptive` passed as an effort value, and camelCase `thinkingLevel` on the Interactions API each failed the same check. A type check cannot tell whether a model name exists or which values a model accepts, and none of these requests was sent.
+
+</div>
+
+**Similar names, different contracts.** There is no shared format:
+
+| Provider and API | Request field | Values in the docs | Reasoning usage field | Source |
+| --- | --- | --- | --- | --- |
+| OpenAI, Responses | `reasoning: { effort }` | `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | `usage.output_tokens_details.reasoning_tokens` | [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning) |
+| Anthropic, Messages | `output_config: { effort }` | `low`, `medium`, `high`, `xhigh`, `max` | `usage.output_tokens_details.thinking_tokens` | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort), [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost) |
+| Google, Interactions | `generation_config: { thinking_level }` | `minimal`, `low`, `medium`, `high` | `usage.total_thought_tokens` | [Thinking](https://ai.google.dev/gemini-api/docs/thinking) |
+| Google, generateContent | `config.thinkingConfig.thinkingLevel` in the JavaScript SDK | the same four levels | `usageMetadata.thoughtsTokenCount` | [API reference](https://ai.google.dev/api/generate-content); field placement checked in the SDK types |
+
+Each list is the union across models; a given model accepts only part of it. And equal names do not mean equal behavior. `high` on one model is not calibrated against `high` on another, even from the same vendor.
+
+<div class="callout documented">
+
+<span class="label documented">Documented</span> Anthropic says Claude Sonnet 5.5's effort levels are recalibrated, so a level "doesn't produce the same amount of thinking as the same level on Claude Sonnet 5", and recommends a fresh effort sweep ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
+
+</div>
+
+## A Starting Heuristic for Choosing Effort
+
+<p class="slide-kicker">Part V · Practical takeaways</p>
+
+<div class="callout opinion">
+
+<span class="label opinion">Opinion</span> This matrix is my engineering heuristic for a first configuration, not a rule and not vendor guidance. Validate whatever it suggests against your own workload.
+
+</div>
+
+| Factor | Points to lower effort | Points to higher effort | Often the better lever |
+| --- | --- | --- | --- |
+| Task complexity | One clear path, a local change | Many interacting parts, several plausible paths | Decompose a task that is broad rather than deep |
+| Uncertainty and ambiguity | A precise spec | Competing hypotheses to weigh | Ask a clarifying question when the spec, not the reasoning, is ambiguous |
+| Context | Everything needed is in the prompt | Complete but intricate context | Retrieve files, logs or docs when facts are missing |
+| Need for outside information | None | Not a reason on its own | Call a tool; effort cannot produce facts |
+| Cost of a wrong result | Cheap to undo | Expensive or irreversible | Human approval and stronger checks, alongside effort |
+| Automated verification | Strong, fast tests, so iterating is cheap | Weak or no checks, so the first answer matters more | Write the missing test before raising effort |
+| Latency and cost budget | Interactive, high volume, tight budget | Offline or batch work with high value per task | Route per task (slide 14) instead of one global setting |
+
+How to use it: start each route at the level the provider's guidance recommends for that kind of workload, or at the documented default. Raise effort only on routes where traced failures are mostly reasoning failures (slide 15) and the verifier is strong enough to show a difference. Lower it where verified success holds at the lower level. Then run the benchmark from slides 16 and 17, and let the numbers overrule the table.
 
 ## Before Increasing Thinking Effort, Ask These Five Questions
 
@@ -315,9 +542,12 @@ Keep this as a reusable decision card: if you cannot answer yes to question 1 an
 
 ### References and further reading
 
-- OpenAI, [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning): `reasoning.effort`, reasoning tokens and summaries.
-- Anthropic, [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) and [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost): effort levels, adaptive thinking, thinking tokens and cost.
-- Google, [Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking): `thinking_level` and thought summaries.
+All provider pages were last checked on October 22, 2026.
+
+- OpenAI, [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning): `reasoning.effort`, reasoning tokens and summaries. [GPT-6 Astra model page](https://developers.openai.com/api/docs/models/gpt-6-astra): supported effort values.
+- Anthropic, [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) and [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost): effort levels and defaults per model, adaptive thinking, thinking tokens and cost.
+- Google, [Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking): `thinking_level` on the Interactions API, levels per model, thought summaries and thinking-token usage. [generateContent reference](https://ai.google.dev/api/generate-content): `usageMetadata.thoughtsTokenCount`.
+- SDKs used for the type checks: [`openai`](https://www.npmjs.com/package/openai) 7.42.0, [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk) 1.1.0, [`@google/genai`](https://www.npmjs.com/package/@google/genai) 2.30.0.
 - Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (December 2024): workflows, agents and when to add complexity.
 - Yao et al., [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (2022).
 - Snell et al., [Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters](https://arxiv.org/abs/2408.03314) (2024).

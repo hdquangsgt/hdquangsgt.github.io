@@ -70,10 +70,10 @@
   <rect class="os" x="20" y="10" width="680" height="38" rx="6"/>
   <text x="360" y="34" text-anchor="middle" class="t h">TEMPLATE · no measured data · replace every "—" with your own experiment results</text>
   <rect class="box" x="20" y="66" width="216" height="80" rx="8"/>
-  <text x="34" y="92" text-anchor="start" class="m s">Task success rate</text>
+  <text x="34" y="92" text-anchor="start" class="m s">Verified task success</text>
   <text x="34" y="126" text-anchor="start" class="t h l">— %</text>
   <rect class="box" x="252" y="66" width="216" height="80" rx="8"/>
-  <text x="266" y="92" text-anchor="start" class="m s">Verified acceptance rate</text>
+  <text x="266" y="92" text-anchor="start" class="m s">First-attempt success</text>
   <text x="266" y="126" text-anchor="start" class="t h l">— %</text>
   <rect class="box" x="484" y="66" width="216" height="80" rx="8"/>
   <text x="498" y="92" text-anchor="start" class="m s">Test pass rate</text>
@@ -88,7 +88,7 @@
   <text x="498" y="188" text-anchor="start" class="m s">Cost per successful task</text>
   <text x="498" y="222" text-anchor="start" class="t h l">$ —</text>
   <rect class="box" x="20" y="258" width="216" height="80" rx="8"/>
-  <text x="34" y="284" text-anchor="start" class="m s">Retries per task</text>
+  <text x="34" y="284" text-anchor="start" class="m s">Average retries per task</text>
   <text x="34" y="318" text-anchor="start" class="t h l">—</text>
   <rect class="box" x="252" y="258" width="216" height="80" rx="8"/>
   <text x="266" y="284" text-anchor="start" class="m s">Tool calls per task</text>
@@ -109,6 +109,6 @@
   <text x="370" y="410" text-anchor="start" class="m s">• Settings: only those the model supports</text>
   <text x="370" y="428" text-anchor="start" class="m s">• Same tasks, same tools, same budget</text>
   <text x="370" y="446" text-anchor="start" class="m s">• N repeated trials per task and setting</text>
-  <text x="370" y="464" text-anchor="start" class="m s">• Report spread (P50 / P95), not one run</text>
+  <text x="370" y="464" text-anchor="start" class="m s">• Report intervals across runs, not one run</text>
   <text x="370" y="482" text-anchor="start" class="m s">• Judge success by checks, not answer length</text>
 </svg>

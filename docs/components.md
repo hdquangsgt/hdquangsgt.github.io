@@ -103,7 +103,7 @@ The article script wraps each top-level `<table>` in `div.table-wrap` and each i
 
 ### Claim labels and callouts
 
-Raw HTML in Markdown, using classes defined in `global.css`. Six kinds map to the label colors: `documented`, `verified`, `observed`, `opinion`, `proposal` and `author-input`.
+Raw HTML in Markdown, using classes defined in `global.css`. Six kinds map to the label colors: `documented`, `verified`, `observed`, `opinion`, `proposal` and `author-input`. A seventh, `illustrative`, marks invented numbers and scenarios; it uses the neutral muted text and surface tokens (6.3:1 light, 6.9:1 dark) and, like `author-input`, a dashed bar.
 
 ```html
 <div class="callout observed">

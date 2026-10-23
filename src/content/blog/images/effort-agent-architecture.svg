@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="552" viewBox="0 0 720 552" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15">
+  <style>
+    .bg { fill: var(--color-bg, #ffffff); }
+    .box { fill: #f5f5f2; stroke: #8a9099; stroke-width: 1.4; }
+    .core { fill: #e9f5f0; stroke: #0b6b52; stroke-width: 1.8; }
+    .obs { fill: #edf3fc; stroke: #1f5fbf; stroke-width: 1.8; }
+    .ext { fill: #f4eefb; stroke: #7a3fb8; stroke-width: 1.8; }
+    .os { fill: #fcefea; stroke: #a33f1c; stroke-width: 1.8; }
+    .hyp { fill: none; stroke: #8a9099; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .zone { fill: none; stroke: #8a9099; stroke-width: 1.3; stroke-dasharray: 3 4; }
+    .band { fill: #f1efe8; stroke: #c9c5b8; stroke-width: 1; }
+    .band2 { fill: #ecf1f8; stroke: #b9c6da; stroke-width: 1; }
+    .t { fill: var(--color-text, #1d1f22); }
+    .m { fill: var(--color-text-muted, #595f67); }
+    .good { fill: #0b6b52; }
+    .bad { fill: #a33f1c; }
+    .h { font-weight: 700; }
+    .l { font-size: 18px; }
+    .s { font-size: 13px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+    .line { stroke: var(--color-text-muted, #595f67); stroke-width: 1.8; fill: none; }
+    .thick { stroke: #0b6b52; stroke-width: 4; fill: none; }
+    .thin { stroke: var(--color-text-muted, #595f67); stroke-width: 1.4; fill: none; }
+    .dash { stroke: var(--color-text-muted, #595f67); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+    .flow { stroke: #0b6b52; stroke-width: 2.4; fill: none; }
+    .loop { stroke: #0b6b52; stroke-width: 2.4; fill: none; stroke-dasharray: 7 5; }
+    .redline { stroke: #a33f1c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    .arrow { fill: var(--color-text-muted, #595f67); }
+    .arrowg { fill: #0b6b52; }
+    .arrowr { fill: #a33f1c; }
+    .dot { fill: #0b6b52; }
+    .dotm { fill: var(--color-text-muted, #595f67); }
+    .ring { fill: var(--color-bg, #ffffff); stroke: var(--color-text, #1d1f22); stroke-width: 2; }
+    .sq { fill: var(--color-text, #1d1f22); }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: var(--color-bg, #121416); }
+      .box { fill: #1a1d20; stroke: #6b737c; }
+      .core { fill: #13291f; stroke: #6fd3ae; }
+      .obs { fill: #17233a; stroke: #8ab6ff; }
+      .ext { fill: #241b33; stroke: #c6a2f5; }
+      .os { fill: #301c15; stroke: #f3a184; }
+      .hyp { stroke: #8a929b; }
+      .zone { stroke: #6b737c; }
+      .band { fill: #1b1c19; stroke: #3a3a35; }
+      .band2 { fill: #171d27; stroke: #2d3a50; }
+      .t { fill: var(--color-text, #e4e6e8); }
+      .m { fill: var(--color-text-muted, #a2a9b1); }
+      .good { fill: #6fd3ae; }
+      .bad { fill: #f3a184; }
+      .thick { stroke: #6fd3ae; }
+      .thin, .line, .dash { stroke: var(--color-text-muted, #a2a9b1); }
+      .flow { stroke: #6fd3ae; }
+      .loop { stroke: #6fd3ae; }
+      .redline { stroke: #f3a184; }
+      .arrow { fill: var(--color-text-muted, #a2a9b1); }
+      .arrowg { fill: #6fd3ae; }
+      .arrowr { fill: #f3a184; }
+      .dot { fill: #6fd3ae; }
+      .dotm { fill: var(--color-text-muted, #a2a9b1); }
+      .ring { fill: var(--color-bg, #121416); stroke: var(--color-text, #e4e6e8); }
+      .sq { fill: var(--color-text, #e4e6e8); }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowg"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowr"/></marker>
+  </defs>
+  <rect class="bg" width="720" height="552"/>
+  <rect class="zone" x="10" y="10" width="700" height="346" rx="10"/>
+  <text x="26" y="34" text-anchor="start" class="t h">Loop controller · your harness, not the model</text>
+  <text x="26" y="54" text-anchor="start" class="m s">Checked before every model call: step, token and time budgets · repeated-action detector · stop rules</text>
+  <path class="loop" d="M636 120 V94 H84 V118" marker-end="url(#ag)"/>
+  <text x="360" y="86" text-anchor="middle" class="m s">tool result + status (ok · error · timeout) re-enters context</text>
+  <rect class="box" x="22" y="120" width="124" height="64" rx="8"/>
+  <text x="84" y="148" text-anchor="middle" class="t h">Context</text>
+  <text x="84" y="167" text-anchor="middle" class="m s">task + history</text>
+  <rect class="core" x="160" y="120" width="124" height="64" rx="8"/>
+  <text x="222" y="148" text-anchor="middle" class="t h">Model call</text>
+  <text x="222" y="167" text-anchor="middle" class="m s">effort acts here</text>
+  <rect class="core" x="298" y="120" width="124" height="64" rx="8"/>
+  <text x="360" y="148" text-anchor="middle" class="t h">Decision</text>
+  <text x="360" y="167" text-anchor="middle" class="m s">answer or tool?</text>
+  <rect class="ext" x="436" y="120" width="124" height="64" rx="8"/>
+  <text x="498" y="148" text-anchor="middle" class="t h">Tool policy</text>
+  <text x="498" y="167" text-anchor="middle" class="m s">allow · ask · deny</text>
+  <rect class="ext" x="574" y="120" width="124" height="64" rx="8"/>
+  <text x="636" y="148" text-anchor="middle" class="t h">Tool runner</text>
+  <text x="636" y="167" text-anchor="middle" class="m s">timeout · retry</text>
+  <path class="flow" d="M146 152 L158 152" marker-end="url(#ag)"/>
+  <path class="flow" d="M284 152 L296 152" marker-end="url(#ag)"/>
+  <path class="flow" d="M422 152 L434 152" marker-end="url(#ag)"/>
+  <path class="flow" d="M560 152 L572 152" marker-end="url(#ag)"/>
+  <rect class="os" x="298" y="236" width="124" height="60" rx="8"/>
+  <text x="360" y="262" text-anchor="middle" class="t h">Verifier</text>
+  <text x="360" y="281" text-anchor="middle" class="m s">tests · types · spec</text>
+  <rect class="core" x="136" y="236" width="124" height="60" rx="8"/>
+  <text x="198" y="262" text-anchor="middle" class="t h">Done</text>
+  <text x="198" y="281" text-anchor="middle" class="m s">verified + traced</text>
+  <rect class="box" x="436" y="236" width="262" height="60" rx="8"/>
+  <text x="567" y="262" text-anchor="middle" class="t h">Escalate to a human</text>
+  <text x="567" y="281" text-anchor="middle" class="m s">risky action · budget · stuck loop</text>
+  <path class="flow" d="M360 184 L360 234" marker-end="url(#ag)"/>
+  <text x="368" y="214" text-anchor="start" class="m s">answer</text>
+  <path class="flow" d="M298 266 L262 266" marker-end="url(#ag)"/>
+  <text x="280" y="254" text-anchor="middle" class="m s">pass</text>
+  <path class="line" d="M498 184 L498 234" marker-end="url(#a)"/>
+  <text x="506" y="214" text-anchor="start" class="m s">needs approval</text>
+  <path class="redline" d="M360 296 V324 H40 V186" marker-end="url(#ar)"/>
+  <text x="60" y="344" text-anchor="start" class="bad s">fail: the failing checks re-enter context as feedback</text>
+  <rect class="band2" x="10" y="368" width="700" height="78" rx="10"/>
+  <text x="26" y="392" text-anchor="start" class="t h">Trace every step, one span each</text>
+  <text x="26" y="413" text-anchor="start" class="m s">model call: model, effort, input / output / reasoning tokens, latency · tool call: name, status, duration</text>
+  <text x="26" y="432" text-anchor="start" class="m s">verification: checks run, result · run: iterations, retries, stop reason, failure class</text>
+  <text x="10" y="470" text-anchor="start" class="t h">Classify every failed run</text>
+  <rect class="box" x="10" y="482" width="166" height="60" rx="8"/>
+  <text x="93" y="508" text-anchor="middle" class="t h">Reasoning</text>
+  <text x="93" y="527" text-anchor="middle" class="m s">facts present, wrong plan</text>
+  <rect class="box" x="188" y="482" width="166" height="60" rx="8"/>
+  <text x="271" y="508" text-anchor="middle" class="t h">Tool execution</text>
+  <text x="271" y="527" text-anchor="middle" class="m s">error, timeout, bad data</text>
+  <rect class="box" x="366" y="482" width="166" height="60" rx="8"/>
+  <text x="449" y="508" text-anchor="middle" class="t h">Orchestration</text>
+  <text x="449" y="527" text-anchor="middle" class="m s">loop, lost context, budget</text>
+  <rect class="box" x="544" y="482" width="166" height="60" rx="8"/>
+  <text x="627" y="508" text-anchor="middle" class="t h">Verification</text>
+  <text x="627" y="527" text-anchor="middle" class="m s">check missing or wrong</text>
+</svg>

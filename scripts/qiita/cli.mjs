@@ -18,7 +18,10 @@ import { assertAllowlisted, assertNotFlagged, findOrphans, loadAllowlist, select
 import { checkRenames, planSync, preflightAssets, recoverManual, runSync, unpublish } from './sync.mjs';
 
 function prepare(post, deps, svgMode) {
-  const builtFile = path.join(deps.distDir, post.lang, 'blog', post.slug, 'index.html');
+  // A slide post's presentation page has no .prose container; its standard-layout copy at <slug>/article/
+  // holds the same content. The canonical URL stays the presentation.
+  const builtDir = path.join(deps.distDir, post.lang, 'blog', post.slug, ...(post.data.slides ? ['article'] : []));
+  const builtFile = path.join(builtDir, 'index.html');
   if (!existsSync(builtFile)) throw new Error(`${post.slug}: ${builtFile} not found. Run \`npm run build\` first.`);
   const converted = convertBody(post.body, {
     canonicalUrl: `${deps.siteUrl}/${post.lang}/blog/${post.slug}/`,

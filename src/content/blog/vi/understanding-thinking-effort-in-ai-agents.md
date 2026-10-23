@@ -2,6 +2,7 @@
 title: 'Hiểu về Thinking Effort trong AI Agent: Điều lập trình viên cần biết'
 description: 'Hướng dẫn dạng slide về reasoning effort dành cho lập trình viên dùng LLM API và coding agent: thiết lập này thay đổi điều gì, khác gì với agent loop, khi nào tăng effort có ích và cách đo lường thay vì đoán mò.'
 pubDate: 2026-10-22T09:00:00+07:00
+updatedDate: 2026-10-22T22:00:00+07:00
 category: AI Agents
 tags: [thinking-effort, reasoning, ai-agents, evaluation, llm-api]
 featured: false
@@ -15,13 +16,15 @@ slides: true
 
 **Vì sao bảo AI "nghĩ kỹ hơn" không phải lúc nào cũng cho kết quả tốt hơn.**
 
-Một thiết lập thinking effort thực sự thay đổi điều gì, và khi nào bạn nên tăng nó? Bộ slide này đi theo câu hỏi đó qua 18 slide: khái niệm, sự khác biệt giữa reasoning và việc thực thi của agent, các tình huống kỹ thuật thực tế, và cách quyết định dựa trên bằng chứng thay vì trực giác.
+Một thiết lập thinking effort thực sự thay đổi điều gì, và khi nào bạn nên tăng nó? Bộ slide này đi theo câu hỏi đó qua 21 slide: khái niệm, sự khác biệt giữa reasoning và việc thực thi của agent, các tình huống kỹ thuật thực tế, một kiến trúc production, và cách quyết định dựa trên bằng chứng thay vì trực giác.
 
 ![Một agent ở bên trái đưa một task đi qua ba làn. Làn trên là đường đi thẳng ngắn tới một câu trả lời nhanh. Làn giữa cân nhắc một phương án thay thế rồi bỏ nó. Làn dưới là đường đậm với nhiều nhánh, hai ngõ cụt và một bước kiểm chứng trước khi ra kết quả đã được kiểm chứng.](../images/effort-cover-paths.svg "Một task, ba mức reasoning effort. Hình minh họa khái niệm, không phải số đo.")
 
 <div class="callout article-only">
 
-**Cách đọc bài này.** Các nhận định đi kèm nhãn: <span class="label documented">Tài liệu</span> lấy từ tài liệu chính thức được liên kết ngay bên cạnh, <span class="label opinion">Quan điểm</span> là cách diễn giải của tôi, và <span class="label proposal">Đề xuất</span> là kiến trúc tôi khuyên dùng, không phải thứ nhà cung cấp nào phát hành. Các sơ đồ mang tính khái niệm trừ khi chú thích nói khác. Thông tin API được đối chiếu với tài liệu của nhà cung cấp ngày 22 tháng 10 năm 2026; tên model và giá trị được chấp nhận thay đổi thường xuyên, nên hãy kiểm tra các trang được liên kết trước khi sao chép.
+**Cách đọc bài này.** Các nhận định đi kèm nhãn. <span class="label documented">Tài liệu</span> nghĩa là được nêu trong tài liệu chính thức hoặc bài báo được liên kết ngay bên cạnh. <span class="label verified">Đã kiểm chứng</span> nghĩa là tôi đã tự chạy, và callout nói rõ đã chạy gì và lần chạy đó không thể cho thấy điều gì. <span class="label opinion">Quan điểm</span> là cách diễn giải hoặc phán đoán kỹ thuật của tôi. <span class="label proposal">Đề xuất</span> là thiết kế tôi khuyên dùng, không phải thứ nhà cung cấp nào phát hành. <span class="label illustrative">Minh họa</span> đánh dấu các con số và tình huống bịa ra để giải thích một ý. Không nhận định nào ở đây là thí nghiệm: tôi không chạy benchmark nào, nên mọi con số trong các slide này hoặc đến từ tài liệu của nhà cung cấp, hoặc được đánh dấu minh họa. Các sơ đồ mang tính khái niệm trừ khi chú thích nói khác.
+
+**Kiểm chứng lần cuối: ngày 22 tháng 10 năm 2026.** Các thông tin về nhà cung cấp được đối chiếu ngày hôm đó với các trang OpenAI, Anthropic và Google được liên kết. Code ở slide 15 và 18 đã được type-check với `openai` 7.42.0, `@anthropic-ai/sdk` 1.1.0 và `@google/genai` 2.30.0 bằng TypeScript 5.9.3. Không đoạn nào được gửi tới API thật. Tên model và giá trị được chấp nhận thay đổi thường xuyên, nên hãy kiểm tra các trang được liên kết trước khi sao chép.
 
 </div>
 
@@ -58,7 +61,7 @@ Có ba giả định phổ biến, và mỗi cái sai theo một cách hữu íc
 
 <div class="callout documented">
 
-<span class="label documented">Tài liệu</span> Hướng dẫn của chính Anthropic về mức effort cao nhất cảnh báo rằng với một số workload nó "thêm chi phí đáng kể cho mức cải thiện chất lượng tương đối nhỏ" và có thể dẫn tới nghĩ quá mức ở các task ít đòi hỏi hơn ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
+<span class="label documented">Tài liệu</span> Trong hướng dẫn riêng cho Claude Opus 4.7, Anthropic nói rằng với hầu hết workload, mức cao nhất là `max` "thêm chi phí đáng kể cho mức cải thiện chất lượng tương đối nhỏ", và ở một số task structured output hoặc ít đòi hỏi trí tuệ hơn, nó có thể dẫn tới nghĩ quá mức ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). Hướng dẫn này viết cho model đó; hướng dẫn cho các model khác thì khác.
 
 </div>
 
@@ -74,9 +77,10 @@ Thinking effort là một **cơ chế điều khiển riêng của từng model 
 
 <span class="label documented">Tài liệu</span> Các nhà cung cấp nói gì, bằng lời của chính họ:
 
-- OpenAI: reasoning token được tính phí như output token, được tính vào `max_output_tokens`, và xuất hiện trong `usage.output_tokens_details.reasoning_tokens`. Reasoning thô không được trả về; bản tóm tắt là tùy chọn bật thêm ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
-- Anthropic: effort là "một tín hiệu hành vi, không phải ngân sách token nghiêm ngặt", và nó ảnh hưởng đến mọi output token, gồm cả văn bản và tool call, không chỉ phần thinking ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
-- Google: `thinking_level` nhận các mức khác nhau tùy model, và bản tóm tắt thought là tùy chọn bật thêm ([Gemini: Thinking](https://ai.google.dev/gemini-api/docs/thinking)).
+- OpenAI: reasoning token được tính phí như output token, được tính vào `max_output_tokens` và context window, và xuất hiện trong `usage.output_tokens_details.reasoning_tokens`. Reasoning thô không được trả về; bản tóm tắt là tùy chọn bật thêm qua `reasoning.summary` ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
+- Anthropic: effort là "một tín hiệu hành vi, không phải ngân sách token nghiêm ngặt", và nó ảnh hưởng đến mọi output token, gồm cả văn bản và tool call, không chỉ phần thinking ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). Bạn bị tính phí cho toàn bộ phần thinking kể cả khi chỉ bản tóm tắt, hoặc không gì cả, được hiển thị; `usage.output_tokens_details.thinking_tokens` báo cáo con số đó ([Anthropic: Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost)).
+- Google: `thinking_level` nhận một tập mức khác nhau tùy model, giá của response là "tổng của output token và thinking token", và bản tóm tắt thought là tùy chọn bật thêm ([Gemini: Thinking](https://ai.google.dev/gemini-api/docs/thinking)).
+- Giá trị mặc định khác nhau. Anthropic ghi `high` là mặc định trên hầu hết model và `medium` trên Claude Opus 5.5 và Claude Haiku 5.5; OpenAI ghi `medium` là mặc định cho một số model; mặc định của Gemini tùy model. Bỏ trống thiết lập không có cùng một nghĩa ở mọi nơi.
 
 </div>
 
@@ -114,7 +118,7 @@ Luồng khái niệm: task và context của người dùng → model suy luận
 
 ![Agent loop trong ba lớp nền màu nhạt. Lớp orchestration: 1, task và context; quy tắc dừng; 5, context được cập nhật. Lớp model: 2, suy luận, được nhấn mạnh là nơi duy nhất reasoning effort có tác dụng, và 3, một quyết định giữa trả lời và gọi tool. Lớp thực thi: 4, thực thi tool. Một câu trả lời đi qua điểm kiểm chứng nét đứt nằm vắt ngang các lớp, rồi qua quy tắc dừng, rồi trả về câu trả lời cuối. Một tool call đi tới thực thi tool, kết quả trở thành context được cập nhật, rồi đưa 6, quyết định tiếp theo, trở lại bước suy luận.](../images/effort-agent-flow.svg "Sáu bước trong ba lớp. Chỉ bước 2 chịu ảnh hưởng của reasoning effort. Các mũi tên nét đứt chuyển động là vòng lặp; kiểm chứng là một điểm kiểm tra, không phải một lớp.")
 
-Effort tác động lên một bước của vòng lặp này, phần suy luận bên trong lần gọi model. Hiệu năng tổng thể còn phụ thuộc vào chất lượng context, có những tool nào, cách harness điều phối retry và việc dừng, và liệu có thứ gì kiểm chứng kết quả hay không.
+Effort tác động lên một bước của vòng lặp này, phần suy luận bên trong lần gọi model. Hiệu năng tổng thể còn phụ thuộc vào chất lượng context, có những tool nào, cách harness điều phối retry và việc dừng, và liệu có thứ gì kiểm chứng kết quả hay không. Slide 15 biến vòng lặp này thành một kiến trúc tham chiếu cho production.
 
 <div class="callout documented">
 
@@ -135,7 +139,7 @@ Effort tác động lên một bước của vòng lặp này, phần suy luận
 | Task khó, nhiều bước | có thể kém kỹ lưỡng hơn | có thể kỹ lưỡng hơn |
 | Task đơn giản | thường là đủ | lợi ích ít, vẫn tốn hơn |
 
-**Đây là xu hướng, không phải đảm bảo.** Khoảng cách lớn đến đâu phụ thuộc vào model, task và cách đo. Bài này không đưa ra con số cải thiện nào vì không con số nào khái quát được; slide 15 chỉ cách tự tạo số liệu của bạn.
+**Đây là xu hướng, không phải đảm bảo.** Khoảng cách lớn đến đâu phụ thuộc vào model, task và cách đo. Bài này không đưa ra con số cải thiện nào vì không con số nào khái quát được; slide 16 và 17 chỉ cách tự tạo số liệu của bạn.
 
 ## Khi nào thinking effort cao hơn đáng giá?
 
@@ -215,6 +219,22 @@ Với coding agent, kiểm chứng nghĩa là các cơ chế cụ thể: test t�
 
 Mục tiêu không phải chất lượng tối đa bằng mọi giá, hay latency tối thiểu bằng mọi giá. Đó là một đánh đổi chấp nhận được cho workload và yêu cầu kinh doanh của nó. Ba chiều này không quy được về một điểm số chung.
 
+**Chi phí có ba lớp**, và mỗi lớp trả lời một câu hỏi khác nhau:
+
+| Lớp | Đếm những gì | Con số đến từ đâu |
+| --- | --- | --- |
+| Lần gọi model | Input, cached input, output và reasoning token, nhân với giá mỗi token của nhà cung cấp | Object `usage` của mỗi response, và trang giá của nhà cung cấp |
+| Lần chạy agent | Mọi lần gọi model trong lần chạy, cộng với thực thi tool, retry, thời gian sandbox hoặc CI, và review của con người | Trace và hóa đơn hạ tầng của bạn |
+| Kết quả task | Tổng chi phí và thời gian, chia cho số task đã qua kiểm chứng | Kết quả đánh giá của bạn |
+
+Effort tác động lên lớp thứ nhất, nhưng quyết định thuộc về lớp thứ ba. Một thiết lập làm mỗi lần gọi rẻ hơn có thể làm task đắt hơn nếu các lần chạy thất bại thường hơn và cần retry, hoặc cần một người, để hoàn thành.
+
+<div class="callout illustrative">
+
+<span class="label illustrative">Minh họa</span> Số liệu bịa ra, chỉ để minh họa phép tính. Thiết lập A tốn $0.40 mỗi lần chạy và qua kiểm chứng ở 50 trên 100 lần chạy: tiêu $40, tức $0.80 mỗi task thành công. Thiết lập B tốn $0.60 mỗi lần chạy và qua kiểm chứng ở 80 trên 100: tiêu $60, tức $0.75 mỗi task thành công. B đắt hơn 50% mỗi lần chạy nhưng rẻ hơn mỗi lần thành công, và khoảng cách còn rộng hơn khi tính cả người phải hoàn thành mỗi task thất bại. Với các con số khác thì A thắng, và đó là lý do bạn phải đo.
+
+</div>
+
 ## Đừng mặc định dùng effort tối đa cho mọi yêu cầu
 
 <p class="slide-kicker">Phần IV · Hệ thống production</p>
@@ -233,57 +253,264 @@ Việc định tuyến có thể dùng quy tắc, bộ phân loại, router dự
 
 Hai lưu ý. Việc phân loại task có thể sai, nên hãy đánh giá router như mọi thành phần khác. Và chỉ dùng các mức effort mà model hay API đã chọn hỗ trợ.
 
+## Kiến trúc tham chiếu cho agent loop
+
+<p class="slide-kicker">Phần IV · Hệ thống production</p>
+
+![Một vùng nét đứt có nhãn loop controller, harness của bạn, không phải model, được kiểm tra trước mỗi lần gọi model: ngân sách số bước, token và thời gian, bộ phát hiện hành động lặp lại và các quy tắc dừng. Bên trong, năm ô xếp hàng ngang: context, lần gọi model nơi effort có tác dụng, quyết định giữa trả lời và tool call, tool policy với allow, ask và deny, và một tool runner có timeout và retry. Một mũi tên nét đứt đưa mỗi kết quả tool cùng trạng thái của nó, ok, error hoặc timeout, trở về context. Một câu trả lời đi xuống verifier với test, kiểu và spec. Đạt thì tới done, đã kiểm chứng và có trace. Không đạt thì đưa các kiểm tra thất bại về context làm phản hồi. Tool policy gửi các hành động cần phê duyệt tới ô leo thang cho con người, ô này cũng bao gồm trường hợp chạm ngân sách và vòng lặp bị kẹt. Bên dưới vùng đó, một dải nói hãy trace mọi bước, mỗi bước một span, và bốn ô phân loại các lần chạy thất bại: reasoning, thực thi tool, orchestration và kiểm chứng.](../images/effort-agent-architecture.svg "Một harness được đề xuất, không phải hành vi của nhà cung cấp. Effort tác động bên trong một ô; mọi thứ khác là code của bạn.")
+
+<div class="callout proposal">
+
+<span class="label proposal">Đề xuất</span> Vòng lặp trong slide này là khuyến nghị của tôi cho một harness production. Không nhà cung cấp nào phát hành nó nguyên dạng.
+
+</div>
+
+| Vấn đề | Cơ chế kiểm soát đề xuất |
+| --- | --- |
+| Vòng lặp chạy mất kiểm soát | Ngân sách số bước, token và thời gian thực, kiểm tra trước mỗi lần gọi model |
+| Vòng lặp không tiến triển | Dừng khi cùng một tool call với cùng tham số lặp lại, hoặc cùng một kiểm tra liên tục thất bại |
+| Tool lỗi và timeout | Mỗi tool một timeout. Chỉ retry các tool idempotent. Trả lỗi và timeout về cho model như kết quả; đừng giấu chúng |
+| Hành động có hệ quả | Một policy cho mỗi tool: cho phép tool chỉ đọc, hỏi người trước khi ghi, deploy, xóa hoặc thanh toán, từ chối phần còn lại. Chạy code trong sandbox |
+| Context | Thêm mỗi kết quả tool cùng trạng thái của nó; cắt bớt đầu ra lớn và giữ con trỏ tới artifact đầy đủ |
+| Khả năng quan sát | Một trace span cho mỗi lần gọi model, tool call và kiểm tra, ghi lại thiết lập effort và lượng token dùng |
+| Kết quả cuối | Chỉ chấp nhận những gì qua verifier |
+
+```typescript
+const LIMITS = { maxSteps: 30, maxOutputTokens: 400_000, maxWallClockMs: 15 * 60_000, maxRepeats: 3 };
+
+async function runTask(task: Task): Promise<RunResult> {
+  const ctx = newContext(task);
+  const startedAt = Date.now();
+  let outputTokens = 0;
+
+  for (let step = 1; step <= LIMITS.maxSteps; step++) {
+    if (outputTokens > LIMITS.maxOutputTokens || Date.now() - startedAt > LIMITS.maxWallClockMs) {
+      return { outcome: "stopped", reason: "budget_exhausted", suspected: "orchestration" };
+    }
+
+    // The only place the effort setting acts.
+    const turn = await trace("model_call", () => callModel(ctx, { effort: chooseEffort(task) }));
+    outputTokens += turn.usage.outputTokens;
+
+    if (turn.kind === "answer") {
+      const check = await trace("verify", () => verify(task, turn.answer));
+      if (check.passed) return { outcome: "verified", answer: turn.answer, check };
+      ctx.append({ type: "verification_failed", findings: check.findings });
+      continue;
+    }
+
+    const call = turn.toolCall;
+    if (repeatCount(ctx, call) >= LIMITS.maxRepeats) {
+      return { outcome: "stopped", reason: "no_progress", suspected: "reasoning" };
+    }
+
+    const policy = toolPolicy(call); // "allow" | "ask" | "deny"
+    if (policy === "deny" || (policy === "ask" && !(await askHuman(call)))) {
+      ctx.append({ type: "tool_denied", call });
+      continue;
+    }
+
+    // Retry only idempotent tools; errors and timeouts go back to the model as results.
+    const result = await trace("tool_call", () =>
+      runTool(call, { timeoutMs: 60_000, retries: call.idempotent ? 2 : 0 }),
+    );
+    ctx.append({ type: "tool_result", call, result });
+  }
+
+  return { outcome: "stopped", reason: "step_limit", suspected: "orchestration" };
+}
+```
+
+<div class="callout verified">
+
+<span class="label verified">Đã kiểm chứng</span> Vòng lặp này qua `tsc --strict` (TypeScript 5.9.3) với các khai báo stub cho những helper nó gọi (`callModel`, `verify`, `runTool` và các hàm còn lại). Tôi cũng chạy nó trên Node.js 26.9.0 với một model giả và các tool giả theo kịch bản, và 8 trên 8 test luồng điều khiển đều qua: câu trả lời đã kiểm chứng, phản hồi từ kiểm chứng, dừng khi lặp lại cùng lời gọi, giới hạn số bước, ngân sách token, tool bị từ chối và chưa được phê duyệt, không retry cho tool không idempotent, và timeout của tool được trả về cho model. Ngân sách thời gian thực chưa được test. Không có model thật nào được gọi, nên điều này cho thấy luồng điều khiển hoạt động, chứ không cho thấy model nào hành xử ra sao bên trong nó. Các giới hạn là giá trị giữ chỗ cần tinh chỉnh.
+
+</div>
+
+<div class="callout documented">
+
+<span class="label documented">Tài liệu</span> Anthropic khuyến nghị phần lõi của thiết kế này: agent nên lấy "ground truth" từ môi trường ở mỗi bước, và nên có điều kiện dừng "chẳng hạn số vòng lặp tối đa" ([Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)).
+
+</div>
+
+**Gắn nhãn mọi lần chạy thất bại** theo loại hỏng đầu tiên, bằng cách đọc trace của nó. *Reasoning*: dữ kiện đã có trong context mà kế hoạch vẫn sai. *Thực thi tool*: một lỗi, một timeout, hoặc đầu ra sai. *Orchestration*: mất context, một vòng lặp, hoặc cạn ngân sách. *Kiểm chứng*: một kiểm tra bị thiếu, chập chờn hoặc sai. Trường `suspected` trong code chỉ là phỏng đoán đầu tiên; trace mới là thứ quyết định.
+
+<div class="callout opinion">
+
+<span class="label opinion">Quan điểm</span> Chỉ loại đầu tiên là lý do để thử tăng effort. Ba loại còn lại được sửa trong harness.
+
+</div>
+
 ## Đo xem effort cao hơn có thực sự giúp ích không
 
 <p class="slide-kicker">Phần IV · Hệ thống production</p>
 
-Hãy xây một bộ đánh giá đại diện cho workload thật của bạn, rồi so sánh các thiết lập mà model hỗ trợ trên các task tương đương trong điều kiện tương đương.
+Hãy xây một bộ đánh giá đại diện cho workload thật của bạn: các task thật, mỗi task có một verifier được viết trước khi bạn nhìn vào bất kỳ kết quả nào. Rồi so sánh các thiết lập mà model hỗ trợ trong điều kiện chỉ khác nhau ở effort.
 
-![Mẫu dashboard với biểu ngữ ghi đây là mẫu, không có số liệu đo. Chín ô trống chỉ có dấu gạch: tỷ lệ task thành công, tỷ lệ được chấp nhận sau kiểm chứng, tỷ lệ qua test, latency P50, latency P95, chi phí mỗi task thành công, số lần retry mỗi task, số tool call mỗi task và thời gian chạy tổng của agent. Bên dưới, biểu đồ thành công theo chi phí còn trống với các dấu giữ chỗ được ghi là không phải dữ liệu, và một checklist quy trình.](../images/effort-eval-dashboard.svg "Một mẫu, không phải kết quả. Mọi giá trị là dấu gạch vì ở đây không báo cáo thí nghiệm nào.")
+![Mẫu dashboard với biểu ngữ ghi đây là mẫu, không có số liệu đo. Chín ô trống chỉ có dấu gạch: tỷ lệ task thành công đã kiểm chứng, tỷ lệ thành công ở lần đầu, tỷ lệ qua test, latency P50, latency P95, chi phí mỗi task thành công, số lần retry trung bình mỗi task, số tool call mỗi task và thời gian chạy tổng của agent. Bên dưới, biểu đồ thành công theo chi phí còn trống với các dấu giữ chỗ được ghi là không phải dữ liệu, và một checklist quy trình.](../images/effort-eval-dashboard.svg "Một mẫu, không phải kết quả. Mọi giá trị là dấu gạch vì ở đây không báo cáo thí nghiệm nào.")
 
-| Chỉ số | Vì sao |
-| --- | --- |
-| Tỷ lệ task thành công và được chấp nhận sau kiểm chứng | Thứ bạn thực sự muốn |
-| Tỷ lệ qua test | Một kiểm tra khách quan khi có test |
-| Latency P50 và P95 | Trải nghiệm điển hình và trải nghiệm xấu nhất thực tế |
-| Chi phí mỗi task *thành công* | Thất bại rẻ không phải là rẻ |
-| Tần suất retry, số tool call, thời gian chạy tổng | Agent loop tốn của bạn những gì |
+**Giữ mọi thứ khác không đổi.** Cố định và ghi lại:
 
-Model và agent không tất định, nên hãy chạy lặp nhiều lần và báo cáo độ phân tán, không phải một lần chạy. Đừng đánh giá thành công bằng độ dài câu trả lời hay số reasoning token: cả hai đo nỗ lực đã bỏ ra, không phải chất lượng đã đạt. Mọi con số bạn công bố nên đến từ một thí nghiệm có ghi chép; dashboard ở trên cố ý để trống.
+- ID snapshot của model và phiên bản SDK;
+- system prompt, định nghĩa tool và phiên bản harness;
+- context mà mỗi task bắt đầu: commit của repository, fixture, tài liệu được truy xuất;
+- giới hạn output (`max_output_tokens` hoặc `max_tokens`) và ngân sách vòng lặp từ slide 15;
+- verifier và tiêu chí đạt của nó.
+
+Chỉ thay đổi giá trị effort, chỉ dùng các giá trị mà model có tài liệu, và xen kẽ các thiết lập theo thời gian để một thay đổi phía nhà cung cấp hay một giờ chậm không rơi vào chỉ một thiết lập.
+
+**Chạy mỗi task nhiều lần cho mỗi thiết lập.** Hai lần chạy cùng một prompt có thể khác nhau, nên một lần chạy mỗi task đo may rủi nhiều ngang với đo thiết lập. Cố định số lần chạy trước khi bắt đầu, so sánh các thiết lập theo từng task trên cùng các task, và báo cáo một khoảng, không chỉ một giá trị trung bình. Với tỷ lệ thành công, một khoảng nhị thức như khoảng Wilson là phù hợp; với latency và chi phí, hãy bootstrap theo task.
+
+<div class="callout opinion">
+
+<span class="label opinion">Quan điểm</span> Năm lần chạy cho mỗi task và mỗi thiết lập, trên 30 đến 50 task, là một lượt đầu hợp lý. Nếu khoảng của hai thiết lập chồng lấn nhiều, bạn chưa chứng minh được khác biệt; hãy thêm task hoặc lần chạy trước khi kết luận điều gì.
+
+</div>
+
+Đừng đánh giá thành công bằng độ dài câu trả lời hay số reasoning token: cả hai đo nỗ lực đã bỏ ra, không phải chất lượng đã đạt.
+
+## Một mẫu benchmark để bạn tự điền
+
+<p class="slide-kicker">Phần IV · Hệ thống production</p>
+
+Định nghĩa mọi chỉ số trước lần chạy đầu tiên, để các con số không thể được chọn sau khi bạn đã thấy chúng:
+
+| Chỉ số | Định nghĩa | Cần để ý |
+| --- | --- | --- |
+| Tỷ lệ task thành công đã kiểm chứng | Số lần chạy có kết quả cuối qua verifier, chia cho tổng số lần chạy | Con số chính |
+| Tỷ lệ thành công ở lần đầu | Số lần chạy đạt ngay ở câu trả lời đầu tiên, không có phản hồi kiểm chứng và không retry, chia cho tổng số lần chạy | Bao nhiêu phần thành công đến từ khả năng phục hồi của vòng lặp |
+| Tỷ lệ qua test | Số test qua chia cho số test đã chạy, ở cuối mỗi lần chạy | Điểm từng phần; không bao giờ thay thế được thành công đã kiểm chứng |
+| Latency, trung vị và P95 | Thời gian thực từ lúc bắt đầu task tới kết quả cuối, cho mỗi lần chạy | P95 cần nhiều lần chạy mới có ý nghĩa |
+| Chi phí mỗi task thành công | Tổng chi phí trên mọi lần chạy, kể cả lần thất bại, chia cho số lần thành công đã kiểm chứng | Thêm chi phí tool và hạ tầng nếu có thể |
+| Số lần retry trung bình | Số lần gọi model sau một kiểm tra thất bại hoặc một lỗi tool, cho mỗi lần chạy | Tách riêng khỏi tổng số lần gọi model |
+
+<div class="callout illustrative">
+
+<span class="label illustrative">Minh họa</span> Một mẫu, không phải kết quả. Mọi ô là dấu gạch vì bài này không báo cáo thí nghiệm nào.
+
+| Thiết lập | Số lần chạy | Thành công đã kiểm chứng (95% CI) | Thành công ở lần đầu | Tỷ lệ qua test | Latency P50 / P95 | Chi phí mỗi lần thành công | Retry trung bình |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| low | — | — | — | — | — / — | — | — |
+| medium | — | — | — | — | — / — | — | — |
+| high | — | — | — | — | — / — | — | — |
+
+Công bố nó cùng ngày chạy, snapshot model, phiên bản SDK, phiên bản bộ task, phiên bản verifier và số lần chạy mỗi task.
+
+</div>
+
+Vì sao phải đo thay vì giả định? Effort cao hơn có thể giúp ở các task cần cân nhắc nhiều hơn, và nó cũng thường làm tăng latency và output token. Hiệu ứng nào thắng phụ thuộc vào model, tập task và độ mạnh của verifier, và có thể thay đổi khi model thay đổi.
+
+<div class="callout documented">
+
+<span class="label documented">Tài liệu</span> Hướng dẫn effort của Anthropic nói "tác động của các mức effort khác nhau tùy loại task" và khuyên bạn "đánh giá hiệu năng trên các use case cụ thể của mình trước khi triển khai" ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)). OpenAI nói các giá trị được hỗ trợ phụ thuộc vào model ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)).
+
+</div>
 
 ## Biến reasoning effort thành một quyết định kỹ thuật tường minh
 
 <p class="slide-kicker">Phần IV · Hệ thống production</p>
 
-Khi nhà cung cấp hỗ trợ, effort là một tham số của request. Đây là một request OpenAI Responses API theo dạng được tài liệu hóa:
+Khi nhà cung cấp hỗ trợ, effort là một tham số của request. Đây là một request OpenAI Responses API theo dạng được tài liệu hóa, với số reasoning token được đọc lại từ response:
 
-```javascript
+```typescript
+import OpenAI from "openai";
+
+const client = new OpenAI();
+
 const response = await client.responses.create({
   model: "gpt-6-astra",
-  reasoning: {
-    effort: "high", // thiết lập mà slide này nói tới
-  },
+  reasoning: { effort: "high" }, // the setting this slide is about
   input: "Analyze this production bug...",
 });
 
 console.log(response.output_text);
+console.log(response.usage?.output_tokens_details.reasoning_tokens);
 ```
 
 <div class="callout documented">
 
-<span class="label documented">Tài liệu</span> Tài liệu được kiểm tra ngày 22 tháng 10 năm 2026 cho thấy `reasoning: { effort: ... }` trên `responses.create`, liệt kê các giá trị `none`, `minimal`, `low`, `medium`, `high`, `xhigh` và `max`, và nêu rằng các giá trị được hỗ trợ phụ thuộc vào model: ví dụ GPT-6 Astra từ chối `none` bằng HTTP 400 ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)). Tên model ở đây là tên mà tài liệu dùng; tôi chưa chạy request này, nên hãy xác nhận model và các giá trị trên trang model của nó trước khi dựa vào.
+<span class="label documented">Tài liệu</span> Hướng dẫn của OpenAI cho thấy `reasoning: { effort }` trên `responses.create`, liệt kê `none`, `minimal`, `low`, `medium`, `high`, `xhigh` và `max`, và nói các giá trị được hỗ trợ phụ thuộc vào model. GPT-6 Astra, model mà chính ví dụ trong hướng dẫn dùng, từ chối `none` bằng HTTP 400 ([OpenAI: Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)); trang model của nó liệt kê từ `low` đến `max` ([GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra)).
 
 </div>
 
 Thiết lập này diễn đạt mức suy luận cần áp dụng. Nó không trả về suy luận riêng tư của model; chỉ có bản tóm tắt, tùy chọn bật thêm.
 
-**Các nhà cung cấp khác đặt tên khác.** Không có định dạng chung:
+Cùng request đó trên Messages API của Anthropic và trên Gemini Interactions API:
 
-| Nhà cung cấp | Tham số | Nguồn |
-| --- | --- | --- |
-| OpenAI (Responses API) | `reasoning: { effort }` | [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning) |
-| Anthropic (Messages API) | `output_config: { effort }` | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) |
-| Google (Gemini API) | `thinking_level` | [Thinking](https://ai.google.dev/gemini-api/docs/thinking) |
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic();
+
+const message = await anthropic.messages.create({
+  model: "claude-opus-5-5",
+  max_tokens: 16000, // thinking counts toward this cap
+  output_config: { effort: "high" },
+  messages: [{ role: "user", content: "Analyze this production bug..." }],
+});
+
+console.log(message.usage.output_tokens_details?.thinking_tokens);
+```
+
+```typescript
+import { GoogleGenAI } from "@google/genai";
+
+const gemini = new GoogleGenAI({});
+
+const interaction = await gemini.interactions.create({
+  model: "gemini-3.8-flash",
+  input: "Analyze this production bug...",
+  generation_config: { thinking_level: "high" },
+});
+
+console.log(interaction.output_text);
+console.log(interaction.usage?.total_thought_tokens);
+```
+
+<div class="callout verified">
+
+<span class="label verified">Đã kiểm chứng</span> Cả ba đoạn code đều qua `tsc --strict` (TypeScript 5.9.3) với `openai` 7.42.0, `@anthropic-ai/sdk` 1.1.0 và `@google/genai` 2.30.0. Để làm đối chứng âm, một giá trị effort không tồn tại, `effort` đặt ở cấp cao nhất của request Anthropic, `adaptive` truyền làm giá trị effort, và `thinkingLevel` viết camelCase trên Interactions API đều thất bại ở cùng phép kiểm tra đó. Type check không thể biết một tên model có tồn tại hay không, hay model chấp nhận những giá trị nào, và không request nào trong số này được gửi đi.
+
+</div>
+
+**Tên giống nhau, hợp đồng khác nhau.** Không có định dạng chung:
+
+| Nhà cung cấp và API | Trường trong request | Giá trị trong tài liệu | Trường usage cho reasoning | Nguồn |
+| --- | --- | --- | --- | --- |
+| OpenAI, Responses | `reasoning: { effort }` | `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | `usage.output_tokens_details.reasoning_tokens` | [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning) |
+| Anthropic, Messages | `output_config: { effort }` | `low`, `medium`, `high`, `xhigh`, `max` | `usage.output_tokens_details.thinking_tokens` | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort), [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost) |
+| Google, Interactions | `generation_config: { thinking_level }` | `minimal`, `low`, `medium`, `high` | `usage.total_thought_tokens` | [Thinking](https://ai.google.dev/gemini-api/docs/thinking) |
+| Google, generateContent | `config.thinkingConfig.thinkingLevel` trong JavaScript SDK | cùng bốn mức đó | `usageMetadata.thoughtsTokenCount` | [API reference](https://ai.google.dev/api/generate-content); vị trí trường được kiểm tra trong type của SDK |
+
+Mỗi danh sách là hợp của các giá trị trên mọi model; một model cụ thể chỉ chấp nhận một phần. Và tên giống nhau không có nghĩa là hành vi giống nhau. `high` trên model này không được hiệu chỉnh tương đương với `high` trên model khác, kể cả cùng một nhà cung cấp.
+
+<div class="callout documented">
+
+<span class="label documented">Tài liệu</span> Anthropic nói các mức effort của Claude Sonnet 5.5 đã được hiệu chỉnh lại, nên một mức "không tạo ra cùng lượng thinking như cùng mức đó trên Claude Sonnet 5", và khuyên chạy lại một đợt quét effort mới ([Anthropic: Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
+
+</div>
+
+## Một heuristic khởi đầu để chọn effort
+
+<p class="slide-kicker">Phần V · Điều rút ra áp dụng được</p>
+
+<div class="callout opinion">
+
+<span class="label opinion">Quan điểm</span> Ma trận này là heuristic kỹ thuật của tôi cho cấu hình đầu tiên, không phải quy tắc và không phải hướng dẫn của nhà cung cấp. Hãy kiểm chứng mọi gợi ý của nó trên workload của chính bạn.
+
+</div>
+
+| Yếu tố | Nghiêng về effort thấp hơn | Nghiêng về effort cao hơn | Đòn bẩy thường tốt hơn |
+| --- | --- | --- | --- |
+| Độ phức tạp của task | Một đường đi rõ ràng, một thay đổi cục bộ | Nhiều phần tương tác, nhiều đường đi hợp lý | Chia nhỏ một task rộng chứ không sâu |
+| Độ bất định và mơ hồ | Spec chính xác | Các giả thuyết cạnh tranh cần cân nhắc | Hỏi lại khi chính spec, chứ không phải phần suy luận, bị mơ hồ |
+| Context | Mọi thứ cần thiết đã có trong prompt | Context đầy đủ nhưng phức tạp | Truy xuất file, log hoặc tài liệu khi thiếu dữ kiện |
+| Nhu cầu thông tin bên ngoài | Không có | Tự nó không phải lý do | Gọi một tool; effort không tạo ra được dữ kiện |
+| Cái giá của kết quả sai | Dễ hoàn tác | Đắt hoặc không thể đảo ngược | Phê duyệt của con người và kiểm tra mạnh hơn, đi cùng với effort |
+| Kiểm chứng tự động | Test mạnh và nhanh, nên lặp lại rẻ | Kiểm tra yếu hoặc không có, nên câu trả lời đầu quan trọng hơn | Viết test còn thiếu trước khi tăng effort |
+| Ngân sách latency và chi phí | Tương tác, khối lượng lớn, ngân sách chặt | Việc offline hoặc batch với giá trị cao mỗi task | Định tuyến theo task (slide 14) thay vì một thiết lập chung |
+
+Cách dùng: bắt đầu mỗi route ở mức mà hướng dẫn của nhà cung cấp khuyên cho loại workload đó, hoặc ở mức mặc định được ghi trong tài liệu. Chỉ tăng effort ở những route mà các thất bại qua trace chủ yếu là thất bại reasoning (slide 15) và verifier đủ mạnh để cho thấy khác biệt. Giảm nó ở nơi tỷ lệ thành công đã kiểm chứng vẫn giữ được ở mức thấp hơn. Sau đó chạy benchmark ở slide 16 và 17, và để các con số quyết định thay cho bảng.
 
 ## Trước khi tăng thinking effort, hãy tự hỏi năm câu này
 
@@ -315,9 +542,12 @@ Hãy giữ nó như một thẻ quyết định dùng lại được: nếu bạ
 
 ### Tài liệu tham khảo và đọc thêm
 
-- OpenAI, [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning): `reasoning.effort`, reasoning token và bản tóm tắt.
-- Anthropic, [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) và [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost): các mức effort, adaptive thinking, thinking token và chi phí.
-- Google, [Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking): `thinking_level` và bản tóm tắt thought.
+Mọi trang của nhà cung cấp được kiểm tra lần cuối ngày 22 tháng 10 năm 2026.
+
+- OpenAI, [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning): `reasoning.effort`, reasoning token và bản tóm tắt. [Trang model GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra): các giá trị effort được hỗ trợ.
+- Anthropic, [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) và [Steering thinking](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost): các mức effort và mặc định theo từng model, adaptive thinking, thinking token và chi phí.
+- Google, [Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking): `thinking_level` trên Interactions API, các mức theo từng model, bản tóm tắt thought và lượng thinking token. [Tham chiếu generateContent](https://ai.google.dev/api/generate-content): `usageMetadata.thoughtsTokenCount`.
+- Các SDK dùng để type-check: [`openai`](https://www.npmjs.com/package/openai) 7.42.0, [`@anthropic-ai/sdk`](https://www.npmjs.com/package/@anthropic-ai/sdk) 1.1.0, [`@google/genai`](https://www.npmjs.com/package/@google/genai) 2.30.0.
 - Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (tháng 12 năm 2024): workflow, agent và khi nào nên thêm độ phức tạp.
 - Yao và cộng sự, [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (2022).
 - Snell và cộng sự, [Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters](https://arxiv.org/abs/2408.03314) (2024).

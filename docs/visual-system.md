@@ -128,7 +128,7 @@ Text and link pairs exceed 4.5:1 (AA). Borders are decorative dividers, so their
 
 ### Claim-label colors
 
-Six semantic label colors, each with a foreground and a tinted background token, in both themes: `documented` (blue), `verified` (green), `observed` (amber), `opinion` (purple), `proposal` (rust) and `author-input` (magenta, for placeholders the author must resolve). All foreground/background pairs measure at least 5.4:1 in light and 7.6:1 in dark. Meaning is always carried by a text label as well as color; see [components.md](components.md#claim-labels-and-callouts).
+Six semantic label colors, each with a foreground and a tinted background token, in both themes: `documented` (blue), `verified` (green), `observed` (amber), `opinion` (purple), `proposal` (rust) and `author-input` (magenta, for placeholders the author must resolve). All foreground/background pairs measure at least 5.4:1 in light and 7.6:1 in dark. A seventh kind, `illustrative` (invented numbers and scenarios), has no color of its own: it uses `--color-text-muted` on `--color-surface` (6.3:1 light, 6.9:1 dark) with a dashed callout bar. Meaning is always carried by a text label as well as color; see [components.md](components.md#claim-labels-and-callouts).
 
 ## Borders, radius and surfaces
 

@@ -94,6 +94,21 @@ test('a flagged post without a built page tells you to build (Review Focus 5)', 
   assert.match(p.errs.join('\n'), /npm run build/);
 });
 
+test('a slide post is converted from its standard-layout copy at <slug>/article/', async () => {
+  const p = project({ frontmatter: { slides: true, qiita: { publish: true } } });
+  // The presentation page has no .prose container; only the article copy is readable.
+  writeFileSync(path.join(p.root, 'dist/ja/blog/pi/index.html'), '<html><div class="deck"></div></html>');
+  mkdirSync(path.join(p.root, 'dist/ja/blog/pi/article'), { recursive: true });
+  writeFileSync(
+    path.join(p.root, 'dist/ja/blog/pi/article/index.html'),
+    '<html><div class="prose"><img alt="Diagram" src="/_astro/d.A.svg"></div><footer class="article-footer"></footer></html>',
+  );
+  assert.equal(await main([], {}, p.deps), 0);
+  const preview = readFileSync(path.join(p.deps.previewDir, 'pi.md'), 'utf8');
+  assert.match(preview, /^!\[Diagram\]\(https:\/\/example\.test\/_astro\/d\.A\.svg\)$/m);
+  assert.match(preview, /元記事: https:\/\/example\.test\/ja\/blog\/pi\/\n$/);
+});
+
 test('an unflagged post publishes nothing', async () => {
   const p = project({ frontmatter: {} });
   assert.equal(await main(['--apply'], { QIITA_TOKEN: 'tok' }, p.deps), 0);

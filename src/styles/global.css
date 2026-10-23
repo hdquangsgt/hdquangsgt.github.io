@@ -1354,6 +1354,14 @@ main {
   background: var(--color-author-input-bg);
 }
 
+/* Invented numbers and scenarios: neutral colors and a dashed bar, so they never read as measurements. */
+.label.illustrative { color: var(--color-text-muted); background: var(--color-surface); }
+.callout.illustrative {
+  border-left-style: dashed;
+  border-color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
 /* A neutral callout (no label), e.g. reading notes at the top of an article. */
 .callout:not([class*=' ']) { border-color: var(--color-border); background: var(--color-surface); }
 
