@@ -18,6 +18,33 @@ test('callouts become :::note and label spans become bold', () => {
   assert.doesNotMatch(markdown, /<div|<span/);
 });
 
+test('slide blocks: kicker, takeaway, checklist and pull question', () => {
+  const md = [
+    '<p class="slide-kicker">第I部 · 導入</p>',
+    '',
+    '<div class="takeaway">',
+    '',
+    'Takeaway text',
+    '',
+    '</div>',
+    '',
+    '<div class="checklist">',
+    '',
+    '1. <strong>Question?</strong><span>Hint.</span>',
+    '',
+    '</div>',
+    '',
+    '<p class="pull-question">Ask this.</p>',
+  ].join('\n');
+  const { markdown } = convertBody(md, ctx());
+  assert.match(markdown, /^\*第I部 · 導入\*$/m);
+  assert.match(markdown, /^:::note info\n\nTakeaway text\n\n:::$/m);
+  assert.match(markdown, /^1\. \*\*Question\?\*\*<br>Hint\.$/m);
+  assert.match(markdown, /^> \*\*Ask this\.\*\*$/m);
+  assert.equal(markdown.match(/^:::/gm).length, 2); // the checklist adds no note block
+  assert.doesNotMatch(markdown, /<div|<p|<span|<strong|<\/div>/);
+});
+
 test('appends the canonical footer', () => {
   const { markdown } = convertBody('hello\n', ctx());
   assert.ok(markdown.endsWith(`\n\n元記事: ${CANON}\n`));

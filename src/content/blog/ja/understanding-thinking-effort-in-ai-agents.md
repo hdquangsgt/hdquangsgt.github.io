@@ -8,6 +8,9 @@ tags: [thinking-effort, reasoning, ai-agents, evaluation, llm-api]
 featured: false
 draft: false
 slides: true
+qiita:
+  publish: true
+  visibility: limited
 ---
 
 ## AI エージェントの Thinking Effort を理解する

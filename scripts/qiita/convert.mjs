@@ -10,6 +10,12 @@ const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 const IMAGE = /!\[((?:[^\]\\]|\\.)*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 const LINK = /(?<!!)\[((?:[^\]\\]|\\.)*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)/g;
 const LABEL_SPAN = /<span class="label [a-z-]+">([^<]*)<\/span>/g;
+// Slide-article blocks (styles/slide-content.css). A takeaway reads as a note; a checklist is only a wrapper.
+const NOTE_OPEN = /^<div class="(?:callout[^"]*|takeaway)">\s*$/;
+const PLAIN_OPEN = /^<div class="checklist">\s*$/;
+const SLIDE_KICKER = /^<p class="slide-kicker">([^<]*)<\/p>\s*$/;
+const PULL_QUESTION = /^<p class="pull-question">([^<]*)<\/p>\s*$/;
+const CHECKLIST_ITEM = /<strong>([^<]*)<\/strong><span>([^<]*)<\/span>/g;
 const FOOTNOTE = /\[\^[^\]]+\]/;
 
 export function decodeEntities(s) {
@@ -93,7 +99,7 @@ export function convertBody(body, ctx) {
   const warnings = [];
   const out = [];
   let imageIndex = 0;
-  let calloutDepth = 0;
+  const blocks = []; // open <div> wrappers: 'note' or 'plain'
   let fence = null;
 
   body.split('\n').forEach((raw, i) => {
@@ -110,19 +116,26 @@ export function convertBody(body, ctx) {
       out.push(line);
       return;
     }
-    if (/^<div class="callout[^"]*">\s*$/.test(line)) {
-      calloutDepth++;
+    if (NOTE_OPEN.test(line)) {
+      blocks.push('note');
       out.push(':::note info');
       return;
     }
-    if (calloutDepth > 0 && /^<\/div>\s*$/.test(line)) {
-      calloutDepth--;
-      out.push(':::');
+    if (PLAIN_OPEN.test(line)) {
+      blocks.push('plain');
+      return;
+    }
+    if (blocks.length > 0 && /^<\/div>\s*$/.test(line)) {
+      if (blocks.pop() === 'note') out.push(':::');
       return;
     }
 
     const { masked, restore } = maskInlineCode(line);
-    let text = masked.replace(LABEL_SPAN, '**$1**');
+    let text = masked
+      .replace(LABEL_SPAN, '**$1**')
+      .replace(SLIDE_KICKER, '*$1*')
+      .replace(PULL_QUESTION, '> **$1**')
+      .replace(CHECKLIST_ITEM, '**$1**<br>$2');
 
     text = text.replace(IMAGE, (match, alt, src, offset, whole) => {
       const n = imageIndex++;
@@ -166,7 +179,7 @@ export function convertBody(body, ctx) {
   });
 
   if (fence) throw new ConversionError('unterminated code fence');
-  if (calloutDepth !== 0) throw new ConversionError('unbalanced callout <div>');
+  if (blocks.length !== 0) throw new ConversionError('unbalanced callout <div>');
   if (imageIndex !== builtImages.length) {
     throw new ConversionError(`markdown has ${imageIndex} image(s) but the built page has ${builtImages.length} image(s)`);
   }
